@@ -17,7 +17,7 @@ export default function MisLotes() {
     numero_registroica: '',
     municipio: '',
     departamento: '',
-    area_total_m2: '',
+    area_total_ha: '',
     fecha_proxima_visita: '',
     id_productor: usuario.id_productor || 1
   })
@@ -75,27 +75,27 @@ export default function MisLotes() {
         })
       }
 
-      setMensaje('✅ ¡Lugar registrado! El administrador lo revisará pronto')
+      setMensaje('✅ ¡Finca registrada! El administrador la revisará pronto')
       setMostrarForm(false)
       setArchivoSubido(null)
       setArchivo(null)
       fetchLugares()
       setForm({
         nombre_lugar: '', numero_registroica: '', municipio: '',
-        departamento: '', area_total_m2: '', fecha_proxima_visita: '',
+        departamento: '', area_total_ha: '', fecha_proxima_visita: '',
         id_productor: usuario.id_productor
       })
     } catch (err) {
-      setMensaje('❌ Error al registrar el lugar')
+      setMensaje('❌ Error al registrar la finca')
     } finally {
       setCargando(false)
     }
   }
 
   const estadoInfo = (estado) => {
-    if (estado === 'Aprobado') return { bg: '#dcfce7', color: '#16a34a', texto: '✅ Aprobado', desc: 'Puedes solicitar inspección' }
+    if (estado === 'Aprobado') return { bg: '#dcfce7', color: '#16a34a', texto: '✅ Aprobado', desc: 'Puedes gestionar tus lotes' }
     if (estado === 'Rechazado') return { bg: '#fee2e2', color: '#dc2626', texto: '❌ Rechazado', desc: 'Contacta al administrador' }
-    return { bg: '#fef9c3', color: '#ca8a04', texto: '⏳ En revisión', desc: 'El ICA está revisando tu lugar' }
+    return { bg: '#fef9c3', color: '#ca8a04', texto: '⏳ En revisión', desc: 'El ICA está revisando tu finca' }
   }
 
   return (
@@ -132,7 +132,7 @@ export default function MisLotes() {
               Bienvenido, {usuario.nombre_completo?.split(' ')[0]}
             </h1>
             <p style={styles.bienvenidaSub}>
-              Aquí puedes registrar tus fincas y solicitar inspecciones del ICA
+              Aquí puedes registrar tus fincas y gestionar tus lotes para las inspecciones del ICA
             </p>
           </div>
           <button style={styles.btnNuevo}
@@ -188,11 +188,11 @@ export default function MisLotes() {
                     onChange={e => setForm({ ...form, departamento: e.target.value })} required />
                 </div>
                 <div style={styles.campo}>
-                  <label style={styles.label}>¿Cuántas hectáreas tiene? (en m²)</label>
-                  <input style={styles.input} type="number" placeholder="Ej: 5000"
-                    value={form.area_total_m2}
-                    onChange={e => setForm({ ...form, area_total_m2: e.target.value })} required />
-                  <span style={styles.ayuda}>1 hectárea = 10.000 m²</span>
+                  <label style={styles.label}>¿Cuántas hectáreas tiene tu finca?</label>
+                  <input style={styles.input} type="number" step="0.1" placeholder="Ej: 5.5"
+                    value={form.area_total_ha}
+                    onChange={e => setForm({ ...form, area_total_ha: e.target.value })} required />
+                  <span style={styles.ayuda}>Ingresa el área en hectáreas</span>
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿Cuándo quieres la próxima visita?</label>
@@ -283,16 +283,16 @@ export default function MisLotes() {
                         </div>
                         <div style={styles.infoFila}>
                           <span style={styles.infoLabel}>📐 Área</span>
-                          <span style={styles.infoValor}>{l.area_total_m2} m²</span>
+                          <span style={styles.infoValor}>{l.area_total_ha} ha</span>
                         </div>
                       </div>
                       {l.estado === 'Aprobado' && (
                         <button style={styles.btnSolicitar}
                           onClick={() => {
                             localStorage.setItem('lugar_activo', JSON.stringify(l))
-                            navigate('/productor/solicitar')
+                            navigate(`/productor/lotes/${l.id_lugar_produccion}`)
                           }}>
-                          Ver mis inspecciones →
+                          Gestionar lotes →
                         </button>
                       )}
                     </div>

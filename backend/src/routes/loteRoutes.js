@@ -1,21 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const {
-  getLugares,
-  getLugarById,
-  createLugar,
-  updateLugar,
-  deleteLugar,
-  aprobarLugar,
-  rechazarLugar
-} = require('../controllers/lugarCtrl');
+const express = require('express')
+const router = express.Router()
+const { getLotes, getLoteById, getLotesByLugar, createLote, updateLote, deleteLote } = require('../controllers/loteCtrl')
 
-router.get('/', getLugares);
-router.get('/:id', getLugarById);
-router.post('/', createLugar);
-router.put('/:id', updateLugar);
-router.delete('/:id', deleteLugar);
-router.patch('/:id/aprobar', aprobarLugar);
-router.patch('/:id/rechazar', rechazarLugar);
+router.get('/', getLotes)
+router.get('/lugar/:id', getLotesByLugar)
+router.get('/:id', getLoteById)
+router.post('/', createLote)
+router.put('/:id', updateLote)
+router.delete('/:id', deleteLote)
 
-module.exports = router;
+module.exports = router

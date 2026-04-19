@@ -10,6 +10,7 @@ import MisLotes from './pages/productor/MisLotes'
 import SolicitarInspeccion from './pages/productor/SolicitarInspeccion'
 import AsignarInspector from './pages/admin/AsignarInspector'
 import CrearInspector from './pages/admin/CrearInspector'
+import MisLotesDetalle from './pages/productor/MisLotes_Detalle'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/admin/asignar" element={<AsignarInspector />} />
         <Route path="/productor/solicitar" element={<SolicitarInspeccion />} />
         <Route path="/admin/inspectores" element={<CrearInspector />} />
+        <Route path="/productor/lotes/:id" element={<MisLotesDetalle />} />
       </Routes>
     </BrowserRouter>
   )

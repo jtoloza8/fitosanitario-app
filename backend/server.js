@@ -17,6 +17,7 @@ const evidenciaRoutes = require('./src/routes/evidenciaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const path = require('path');
 const uploadRoutes = require('./src/routes/uploadRoutes');
+const solicitudRoutes = require('./src/routes/solicitudRoutes');
 
 const app = express();
 app.use(cors());
@@ -40,6 +41,7 @@ app.use('/api/evidencias', evidenciaRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/upload', uploadRoutes);
+app.use('/api/solicitudes', solicitudRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

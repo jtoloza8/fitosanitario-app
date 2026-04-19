@@ -28,12 +28,12 @@ const getLugarById = async (req, res) => {
 // Crear un lugar
 const createLugar = async (req, res) => {
   try {
-    const { nombre_lugar, numero_registroica, municipio, departamento, area_total_m2, fecha_proxima_visita, id_productor } = req.body;
+    const { nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor } = req.body;
     const result = await pool.query(
       `INSERT INTO lugar_produccion 
-        (nombre_lugar, numero_registroica, municipio, departamento, area_total_m2, fecha_proxima_visita, id_productor, estado)
+        (nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, estado)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'Pendiente') RETURNING *`,
-      [nombre_lugar, numero_registroica, municipio, departamento, area_total_m2, fecha_proxima_visita, id_productor]
+      [nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -45,13 +45,13 @@ const createLugar = async (req, res) => {
 const updateLugar = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre_lugar, municipio, departamento, area_total_m2, fecha_proxima_visita } = req.body;
+    const { nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita } = req.body;
     const result = await pool.query(
       `UPDATE lugar_produccion SET
         nombre_lugar=$1, municipio=$2, departamento=$3,
-        area_total_m2=$4, fecha_proxima_visita=$5
+        area_total_ha=$4, fecha_proxima_visita=$5
        WHERE id_lugar_produccion=$6 RETURNING *`,
-      [nombre_lugar, municipio, departamento, area_total_m2, fecha_proxima_visita, id]
+      [nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id]
     );
     if (result.rows.length === 0)
       return res.status(404).json({ error: 'Lugar no encontrado' });
