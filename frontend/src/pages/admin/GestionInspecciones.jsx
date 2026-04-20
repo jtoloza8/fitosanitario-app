@@ -5,7 +5,7 @@ import axios from 'axios'
 export default function GestionInspecciones() {
   const navigate = useNavigate()
   const [visitas, setVisitas] = useState([])
-  const [filtro, setFiltro] = useState('Pendiente')
+  const [filtro, setFiltro] = useState('Por revisar')
   const [visitaSeleccionada, setVisitaSeleccionada] = useState(null)
   const [detalles, setDetalles] = useState([])
   const [observacion, setObservacion] = useState('')
@@ -52,6 +52,7 @@ export default function GestionInspecciones() {
   const estadoColor = (estado) => {
     if (estado === 'Aprobada') return { bg: '#dcfce7', color: '#16a34a' }
     if (estado === 'Rechazada') return { bg: '#fee2e2', color: '#dc2626' }
+    if (estado === 'Finalizada') return { bg: '#e3f2fd', color: '#1565c0' }
     return { bg: '#fef9c3', color: '#ca8a04' }
   }
 
@@ -62,7 +63,17 @@ export default function GestionInspecciones() {
     return { label: 'Bajo', color: '#16a34a', bg: '#dcfce7' }
   }
 
-  const visitasFiltradas = visitas.filter(v => (v.estado || 'Pendiente') === filtro)
+  const visitasFiltradas = visitas.filter(v => {
+    if (filtro === 'Por revisar') return v.estado === 'Finalizada' || !v.estado || v.estado === 'Pendiente'
+    if (filtro === 'Aprobada') return v.estado === 'Aprobada'
+    if (filtro === 'Rechazada') return v.estado === 'Rechazada'
+    return true
+  })
+
+  const contarFiltro = (f) => {
+    if (f === 'Por revisar') return visitas.filter(v => v.estado === 'Finalizada' || !v.estado || v.estado === 'Pendiente').length
+    return visitas.filter(v => v.estado === f).length
+  }
 
   return (
     <div style={styles.page}>
@@ -82,7 +93,8 @@ export default function GestionInspecciones() {
         </div>
         <div style={styles.navRight}>
           <button style={styles.navBack} onClick={() => navigate('/admin')}>← Volver</button>
-          <button style={styles.navLogout} onClick={() => { localStorage.clear(); window.location.href = '/' }}>
+          <button style={styles.navLogout}
+            onClick={() => { localStorage.clear(); window.location.href = '/' }}>
             Cerrar sesión
           </button>
         </div>
@@ -107,14 +119,14 @@ export default function GestionInspecciones() {
 
         {/* FILTROS */}
         <div style={styles.filtros}>
-          {['Pendiente', 'Aprobada', 'Rechazada'].map(f => (
+          {['Por revisar', 'Aprobada', 'Rechazada'].map(f => (
             <button key={f} className="btn" style={{
               ...styles.filtroBtn,
               background: filtro === f ? '#1565c0' : 'white',
               color: filtro === f ? 'white' : '#555',
               border: filtro === f ? '2px solid #1565c0' : '2px solid #e5e7eb',
             }} onClick={() => setFiltro(f)}>
-              {f} ({visitas.filter(v => (v.estado || 'Pendiente') === f).length})
+              {f} ({contarFiltro(f)})
             </button>
           ))}
         </div>
@@ -124,7 +136,7 @@ export default function GestionInspecciones() {
           {/* LISTA */}
           <div style={styles.lista}>
             {visitasFiltradas.length === 0 ? (
-              <div style={styles.vacio}>No hay inspecciones con estado "{filtro}"</div>
+              <div style={styles.vacio}>No hay inspecciones para revisar</div>
             ) : (
               visitasFiltradas.map((v, i) => {
                 const est = estadoColor(v.estado || 'Pendiente')
@@ -138,10 +150,12 @@ export default function GestionInspecciones() {
                     <div style={styles.filaInfo}>
                       <h3 style={styles.filaNombre}>{v.nombre_lugar || `Visita #${v.id_visita_inspeccion}`}</h3>
                       <p style={styles.filaDato}>Inspector: {v.nombre_inspector || 'No asignado'}</p>
-                      <p style={styles.filaDato}>Fecha: {new Date(v.fecha).toLocaleDateString('es-CO')} | Periodo: {v.periodo_reportado}</p>
+                      <p style={styles.filaDato}>
+                        Fecha: {new Date(v.fecha).toLocaleDateString('es-CO')} | Periodo: {v.periodo_reportado}
+                      </p>
                     </div>
                     <span style={{ ...styles.estadoBadge, background: est.bg, color: est.color }}>
-                      {v.estado || 'Pendiente'}
+                      {v.estado === 'Finalizada' ? 'Por revisar' : v.estado || 'Pendiente'}
                     </span>
                   </div>
                 )
@@ -177,11 +191,11 @@ export default function GestionInspecciones() {
                 </div>
               </div>
 
-              {/* DETALLES DE INSPECCIÓN */}
+              {/* HALLAZGOS */}
               <div style={styles.detallesSection}>
                 <h3 style={styles.detallesTitulo}>Hallazgos registrados</h3>
                 {detalles.length === 0 ? (
-                  <p style={styles.sinDetalles}>Sin hallazgos registrados</p>
+                  <p style={styles.sinDetalles}>Sin hallazgos registrados aún</p>
                 ) : (
                   detalles.map((d, i) => {
                     const alerta = nivelAlerta(d.porcentaje_incidencia)
@@ -197,6 +211,7 @@ export default function GestionInspecciones() {
                           <span>Muestreadas: <b>{d.especie_muestreadas}</b></span>
                           <span>Afectadas: <b>{d.especie_afectadas}</b></span>
                           <span>Incidencia: <b>{parseFloat(d.porcentaje_incidencia).toFixed(1)}%</b></span>
+                          <span>Área: <b>{d.area_registrada} ha</b></span>
                         </div>
                         {d.informacion_de_produccion && (
                           <p style={styles.detalleCardObs}>{d.informacion_de_produccion}</p>
@@ -208,7 +223,9 @@ export default function GestionInspecciones() {
               </div>
 
               {/* ACCIONES */}
-              {(visitaSeleccionada.estado === 'Pendiente' || !visitaSeleccionada.estado) && (
+              {(visitaSeleccionada.estado === 'Pendiente' ||
+                visitaSeleccionada.estado === 'Finalizada' ||
+                !visitaSeleccionada.estado) && (
                 <div style={styles.acciones}>
                   <div style={styles.obsSection}>
                     <label style={styles.obsLabel}>Observación del administrador</label>
@@ -310,7 +327,7 @@ const styles = {
   detalleCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
   detalleCardLabel: { fontSize: '0.82rem', fontWeight: '600', color: '#555' },
   alertaBadge: { padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700' },
-  detalleCardInfo: { display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#555' },
+  detalleCardInfo: { display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#555', flexWrap: 'wrap' },
   detalleCardObs: { fontSize: '0.82rem', color: '#888', marginTop: '8px', fontStyle: 'italic' },
   acciones: { display: 'flex', flexDirection: 'column', gap: '10px' },
   obsSection: { display: 'flex', flexDirection: 'column', gap: '6px' },
@@ -318,6 +335,7 @@ const styles = {
   motivoInput: {
     padding: '12px', border: '2px solid #e5e7eb', borderRadius: '10px',
     fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", resize: 'vertical', minHeight: '80px',
+    width: '100%',
   },
   btnAprobar: {
     background: '#1565c0', color: 'white', border: 'none',

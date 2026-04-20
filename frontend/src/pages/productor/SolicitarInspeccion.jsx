@@ -8,6 +8,7 @@ export default function SolicitarInspeccion() {
   const [lugares, setLugares] = useState([])
   const [lotes, setLotes] = useState([])
   const [solicitudes, setSolicitudes] = useState([])
+  const [visitas, setVisitas] = useState([])
   const [lugarSeleccionado, setLugarSeleccionado] = useState(null)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
@@ -21,6 +22,7 @@ export default function SolicitarInspeccion() {
   useEffect(() => {
     fetchLugares()
     fetchSolicitudes()
+    fetchVisitas()
   }, [])
 
   const fetchLugares = async () => {
@@ -37,6 +39,13 @@ export default function SolicitarInspeccion() {
     try {
       const res = await axios.get(`http://localhost:3000/api/solicitudes/productor/${usuario.id_productor}`)
       setSolicitudes(res.data)
+    } catch (err) { console.error(err) }
+  }
+
+  const fetchVisitas = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/api/visitas')
+      setVisitas(res.data)
     } catch (err) { console.error(err) }
   }
 
@@ -82,11 +91,22 @@ export default function SolicitarInspeccion() {
     }
   }
 
-  const estadoColor = (estado) => {
+  const estadoColorSolicitud = (estado) => {
     if (estado === 'Aprobada') return { bg: '#dcfce7', color: '#16a34a' }
     if (estado === 'Rechazada') return { bg: '#fee2e2', color: '#dc2626' }
     return { bg: '#fef9c3', color: '#ca8a04' }
   }
+
+  const estadoColorVisita = (estado) => {
+    if (estado === 'Aprobada') return { bg: '#dcfce7', color: '#16a34a' }
+    if (estado === 'Rechazada') return { bg: '#fee2e2', color: '#dc2626' }
+    if (estado === 'Finalizada') return { bg: '#e3f2fd', color: '#1565c0' }
+    return { bg: '#fef9c3', color: '#ca8a04' }
+  }
+
+  const misVisitas = visitas.filter(v =>
+    lugares.some(l => l.id_lugar_produccion === v.id_lugar_produccion)
+  )
 
   return (
     <div style={styles.page}>
@@ -119,7 +139,7 @@ export default function SolicitarInspeccion() {
         <div style={styles.header}>
           <div>
             <p style={styles.headerSub}>Panel del Productor</p>
-            <h1 style={styles.headerTitulo}>Solicitar Inspección</h1>
+            <h1 style={styles.headerTitulo}>Mis Inspecciones</h1>
           </div>
         </div>
 
@@ -138,12 +158,12 @@ export default function SolicitarInspeccion() {
 
         <div style={styles.layout}>
 
-          {/* FORMULARIO */}
+          {/* FORMULARIO SOLICITUD */}
           <div>
             <h2 style={styles.seccionTitulo}>Nueva solicitud</h2>
             <p style={styles.seccionSub}>Selecciona la finca y el lote que quieres inspeccionar</p>
 
-            {/* PASO 1 - SELECCIONAR FINCA */}
+            {/* PASO 1 */}
             <div style={styles.paso}>
               <div style={styles.pasoHeader}>
                 <span style={styles.pasoNum}>1</span>
@@ -173,7 +193,7 @@ export default function SolicitarInspeccion() {
               )}
             </div>
 
-            {/* PASO 2 - SELECCIONAR LOTE */}
+            {/* PASO 2 */}
             {lugarSeleccionado && (
               <div style={styles.paso}>
                 <div style={styles.pasoHeader}>
@@ -203,7 +223,7 @@ export default function SolicitarInspeccion() {
               </div>
             )}
 
-            {/* PASO 3 - FECHA Y MOTIVO */}
+            {/* PASO 3 */}
             {lugarSeleccionado && lotes.length > 0 && (
               <div style={styles.paso}>
                 <div style={styles.pasoHeader}>
@@ -239,36 +259,93 @@ export default function SolicitarInspeccion() {
 
           {/* HISTORIAL */}
           <div>
-            <h2 style={styles.seccionTitulo}>Mis solicitudes</h2>
-            <p style={styles.seccionSub}>Historial de todas tus solicitudes de inspección</p>
+            <h2 style={styles.seccionTitulo}>Historial</h2>
+            <p style={styles.seccionSub}>Estado de tus solicitudes e inspecciones</p>
 
-            {solicitudes.length === 0 ? (
-              <div style={styles.vacio}>
-                <p style={styles.vacioTitulo}>Sin solicitudes aún</p>
-                <p style={styles.vacioSub}>Tus solicitudes aparecerán aquí</p>
-              </div>
-            ) : (
-              <div style={styles.solicitudesList}>
-                {solicitudes.map((s, i) => {
-                  const est = estadoColor(s.estado)
-                  return (
-                    <div key={i} style={styles.solicitudCard}>
-                      <div style={styles.solicitudHeader}>
-                        <div>
-                          <h3 style={styles.solicitudNombre}>{s.nombre_lugar}</h3>
-                          <p style={styles.solicitudDato}>Lote: {s.nombre_lote} — {s.especie}</p>
-                          <p style={styles.solicitudDato}>
-                            Fecha solicitada: {new Date(s.fecha_solicitada).toLocaleDateString('es-CO')}
-                          </p>
-                          {s.motivo && <p style={styles.solicitudDato}>Motivo: {s.motivo}</p>}
+            {/* SOLICITUDES */}
+            {solicitudes.length > 0 && (
+              <>
+                <h3 style={styles.subTitulo}>Solicitudes enviadas</h3>
+                <div style={styles.lista}>
+                  {solicitudes.map((s, i) => {
+                    const est = estadoColorSolicitud(s.estado)
+                    return (
+                      <div key={i} style={styles.card}>
+                        <div style={styles.cardHeader}>
+                          <div>
+                            <h3 style={styles.cardNombre}>{s.nombre_lugar}</h3>
+                            <p style={styles.cardDato}>Lote: {s.nombre_lote} — {s.especie}</p>
+                            <p style={styles.cardDato}>
+                              Fecha solicitada: {new Date(s.fecha_solicitada).toLocaleDateString('es-CO')}
+                            </p>
+                            {s.motivo && <p style={styles.cardDato}>Motivo: {s.motivo}</p>}
+                          </div>
+                          <span style={{ ...styles.badge, background: est.bg, color: est.color }}>
+                            {s.estado}
+                          </span>
                         </div>
-                        <span style={{ ...styles.estadoBadge, background: est.bg, color: est.color }}>
-                          {s.estado}
-                        </span>
+                        {s.estado === 'Rechazada' && (
+                          <div style={styles.rechazadoBox}>
+                            <p style={styles.rechazadoTexto}>
+                              Solicitud rechazada. Puedes enviar una nueva solicitud.
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* VISITAS */}
+            {misVisitas.length > 0 && (
+              <>
+                <h3 style={{ ...styles.subTitulo, marginTop: '24px' }}>Inspecciones programadas</h3>
+                <div style={styles.lista}>
+                  {misVisitas.map((v, i) => {
+                    const est = estadoColorVisita(v.estado || 'Pendiente')
+                    return (
+                      <div key={i} style={styles.card}>
+                        <div style={styles.cardHeader}>
+                          <div>
+                            <h3 style={styles.cardNombre}>{v.nombre_lugar}</h3>
+                            <p style={styles.cardDato}>
+                              Inspector: {v.nombre_inspector || 'Por asignar'}
+                            </p>
+                            <p style={styles.cardDato}>
+                              Fecha: {new Date(v.fecha).toLocaleDateString('es-CO')}
+                            </p>
+                            <p style={styles.cardDato}>Periodo: {v.periodo_reportado}</p>
+                          </div>
+                          <span style={{ ...styles.badge, background: est.bg, color: est.color }}>
+                            {v.estado || 'Pendiente'}
+                          </span>
+                        </div>
+                        {v.observacion_admin && (
+                          <div style={styles.obsAdmin}>
+                            <p style={styles.obsLabel}>Observación ICA:</p>
+                            <p style={styles.obsTexto}>{v.observacion_admin}</p>
+                          </div>
+                        )}
+                        {v.estado === 'Rechazada' && (
+                          <div style={styles.rechazadoBox}>
+                            <p style={styles.rechazadoTexto}>
+                              Inspección rechazada. Puedes solicitar una nueva inspección.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {solicitudes.length === 0 && misVisitas.length === 0 && (
+              <div style={styles.vacio}>
+                <p style={styles.vacioTitulo}>Sin historial aún</p>
+                <p style={styles.vacioSub}>Tus solicitudes e inspecciones aparecerán aquí</p>
               </div>
             )}
           </div>
@@ -297,9 +374,7 @@ const styles = {
     border: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem',
   },
   contenido: { maxWidth: '1200px', margin: '0 auto', padding: '48px 40px' },
-  header: {
-    marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #dde8dd',
-  },
+  header: { marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #dde8dd' },
   headerSub: { fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#40916c', marginBottom: '8px', fontWeight: '600' },
   headerTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '2.4rem', color: '#1a4d2e', fontWeight: 'normal' },
   error: {
@@ -315,6 +390,7 @@ const styles = {
   layout: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' },
   seccionTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: '#1a4d2e', marginBottom: '4px', fontWeight: 'normal' },
   seccionSub: { fontSize: '0.85rem', color: '#888', marginBottom: '20px' },
+  subTitulo: { fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#888', fontWeight: '600', marginBottom: '12px' },
   paso: {
     background: 'white', borderRadius: '14px', padding: '20px 24px',
     marginBottom: '16px', border: '1px solid #e8efe8',
@@ -348,19 +424,24 @@ const styles = {
     padding: '14px', borderRadius: '10px', fontSize: '1rem',
     fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginTop: '8px',
   },
+  lista: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  card: {
+    background: 'white', borderRadius: '12px', padding: '18px 20px',
+    border: '1px solid #e8efe8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+  },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardNombre: { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: '#1a4d2e', marginBottom: '6px' },
+  cardDato: { fontSize: '0.82rem', color: '#888', marginTop: '2px' },
+  badge: { padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '12px' },
+  obsAdmin: { marginTop: '12px', background: '#f0f4f0', borderRadius: '8px', padding: '12px' },
+  obsLabel: { fontSize: '0.75rem', textTransform: 'uppercase', color: '#888', fontWeight: '600', marginBottom: '4px' },
+  obsTexto: { fontSize: '0.88rem', color: '#333' },
+  rechazadoBox: { marginTop: '12px', background: '#fff8e1', borderRadius: '8px', padding: '10px 14px' },
+  rechazadoTexto: { fontSize: '0.85rem', color: '#ca8a04' },
   vacio: {
     textAlign: 'center', padding: '48px 24px', background: 'white',
     borderRadius: '16px', border: '1px solid #e8efe8',
   },
   vacioTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', color: '#ccc', marginBottom: '8px' },
   vacioSub: { fontSize: '0.85rem', color: '#ccc' },
-  solicitudesList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  solicitudCard: {
-    background: 'white', borderRadius: '12px', padding: '18px 20px',
-    border: '1px solid #e8efe8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  solicitudHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  solicitudNombre: { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: '#1a4d2e', marginBottom: '6px' },
-  solicitudDato: { fontSize: '0.82rem', color: '#888', marginTop: '2px' },
-  estadoBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '12px' },
 }

@@ -8,6 +8,7 @@ export default function RegistrarInforme() {
   const [lotes, setLotes] = useState([])
   const [plagas, setPlagas] = useState([])
   const [loteSeleccionado, setLoteSeleccionado] = useState(null)
+  const [loteActivo, setLoteActivo] = useState(null)
   const [plagaSeleccionada, setPlagaSeleccionada] = useState(null)
   const [hallazgos, setHallazgos] = useState([])
   const [form, setForm] = useState({
@@ -34,9 +35,8 @@ export default function RegistrarInforme() {
 
   const fetchLotes = async (idLugar) => {
     try {
-      const res = await axios.get('http://localhost:3000/api/lotes')
-      const filtrados = res.data.filter(l => l.id_lugar_produccion === idLugar)
-      setLotes(filtrados)
+      const res = await axios.get(`http://localhost:3000/api/lotes/lugar/${idLugar}`)
+      setLotes(res.data)
     } catch (err) { console.error(err) }
   }
 
@@ -53,6 +53,14 @@ export default function RegistrarInforme() {
       const filtrados = res.data.filter(d => d.id_visita_inspeccion === idVisita)
       setHallazgos(filtrados)
     } catch (err) { console.error(err) }
+  }
+
+  const handleSeleccionarLote = (e) => {
+    const id = parseInt(e.target.value)
+    setLoteSeleccionado(id)
+    const lote = lotes.find(l => l.id_lote === id)
+    setLoteActivo(lote)
+    setForm(prev => ({ ...prev, area_registrada: lote?.area_ha || '' }))
   }
 
   const calcularIncidencia = () => {
@@ -82,6 +90,10 @@ export default function RegistrarInforme() {
       return setError('Las plantas afectadas no pueden superar las muestreadas')
     }
 
+    if (loteActivo && parseFloat(form.area_registrada) > parseFloat(loteActivo.area_ha)) {
+      return setError(`El área no puede superar las ${loteActivo.area_ha} hectáreas del lote`)
+    }
+
     setCargando(true)
     try {
       const porcentaje = (afectadas / muestreadas) * 100
@@ -101,6 +113,7 @@ export default function RegistrarInforme() {
       setMensaje('Hallazgo guardado correctamente')
       setForm({ especie_muestreadas: '', especie_afectadas: '', area_registrada: '', informacion_de_produccion: '' })
       setLoteSeleccionado(null)
+      setLoteActivo(null)
       setPlagaSeleccionada(null)
       fetchHallazgos(visita.id_visita_inspeccion)
     } catch (err) {
@@ -114,13 +127,10 @@ export default function RegistrarInforme() {
     if (hallazgos.length === 0) return setError('Debes registrar al menos un hallazgo')
     try {
       await axios.patch(`http://localhost:3000/api/visitas/${visita.id_visita_inspeccion}`, {
-        fecha: visita.fecha,
-        hora_inicio: visita.hora_inicio,
         hora_fin: new Date().toTimeString().slice(0, 5),
-        periodo_reportado: visita.periodo_reportado,
       })
       localStorage.removeItem('visita_activa')
-      setMensaje('Informe finalizado y enviado al administrador')
+      setMensaje('✅ Informe finalizado y enviado al administrador')
       setTimeout(() => navigate('/inspector/calendario'), 2000)
     } catch (err) {
       setError('Error al finalizar el informe')
@@ -189,7 +199,7 @@ export default function RegistrarInforme() {
             <div style={styles.campo}>
               <label style={styles.label}>Lote a evaluar</label>
               <select style={styles.input} value={loteSeleccionado || ''}
-                onChange={e => setLoteSeleccionado(parseInt(e.target.value))}>
+                onChange={handleSeleccionarLote}>
                 <option value="">Selecciona un lote...</option>
                 {lotes.map(l => (
                   <option key={l.id_lote} value={l.id_lote}>
@@ -241,10 +251,18 @@ export default function RegistrarInforme() {
             )}
 
             <div style={styles.campo}>
-              <label style={styles.label}>Área registrada (m²)</label>
-              <input style={styles.input} type="number" min="0"
-                placeholder="Área evaluada" value={form.area_registrada}
-                onChange={e => setForm({ ...form, area_registrada: e.target.value })} />
+              <label style={styles.label}>Área registrada (hectáreas)</label>
+              <input style={styles.input} type="number" step="0.1" min="0.1"
+                max={loteActivo?.area_ha || ''}
+                placeholder={loteActivo ? `Máx: ${loteActivo.area_ha} ha` : 'Selecciona un lote primero'}
+                value={form.area_registrada}
+                onChange={e => setForm({ ...form, area_registrada: e.target.value })}
+                disabled={!loteActivo} />
+              {loteActivo && (
+                <span style={{ fontSize: '0.78rem', color: '#40916c', marginTop: '4px', display: 'block' }}>
+                  Este lote tiene {loteActivo.area_ha} hectáreas disponibles
+                </span>
+              )}
             </div>
 
             <div style={styles.campo}>
@@ -279,13 +297,18 @@ export default function RegistrarInforme() {
               <div style={styles.hallazgosList}>
                 {hallazgos.map((h, i) => {
                   const al = nivelAlerta(h.porcentaje_incidencia)
+                  const loteNombre = lotes.find(l => l.id_lote === h.id_lote)?.nombre_lote || `Lote #${h.id_lote}`
+                  const plagaNombre = plagas.find(p => p.id_plaga === h.id_plaga)?.nombre_plaga || `Plaga #${h.id_plaga}`
                   return (
                     <div key={i} style={styles.hallazgoCard}>
                       <div style={styles.hallazgoHeader}>
                         <div>
-                          <p style={styles.hallazgoTitulo}>Lote #{h.id_lote} — Plaga #{h.id_plaga}</p>
+                          <p style={styles.hallazgoTitulo}>{loteNombre} — {plagaNombre}</p>
                           <p style={styles.hallazgoDato}>
                             {h.especie_muestreadas} muestreadas / {h.especie_afectadas} afectadas
+                          </p>
+                          <p style={styles.hallazgoDato}>
+                            Área: {h.area_registrada} ha
                           </p>
                         </div>
                         <div style={styles.hallazgoRight}>
