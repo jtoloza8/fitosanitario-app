@@ -25,7 +25,9 @@ export default function CalendarioVisitas() {
     return { bg: '#fef9c3', color: '#ca8a04' }
   }
 
-  const visitasFiltradas = visitas.filter(v => (v.estado || 'Pendiente') === filtro)
+  const visitasFiltradas = filtro === 'Todas'
+    ? visitas
+    : visitas.filter(v => (v.estado || 'Pendiente') === filtro)
 
   return (
     <div style={styles.page}>
@@ -60,24 +62,22 @@ export default function CalendarioVisitas() {
             <p style={styles.headerSub}>Panel del Inspector</p>
             <h1 style={styles.headerTitulo}>Mis Visitas Asignadas</h1>
           </div>
-          <button
-            className="btn"
-            style={styles.btnInforme}
-            onClick={() => navigate('/inspector/informe')}
-          >
-            Registrar Informe
-          </button>
         </div>
 
         {/* STATS */}
         <div style={styles.statsGrid}>
           {[
-            { label: 'Total visitas', valor: visitas.length, color: '#1a4d2e', bg: '#e8f5e9' },
-            { label: 'Pendientes', valor: visitas.filter(v => (v.estado || 'Pendiente') === 'Pendiente').length, color: '#ca8a04', bg: '#fef9c3' },
-            { label: 'Aprobadas', valor: visitas.filter(v => v.estado === 'Aprobada').length, color: '#16a34a', bg: '#dcfce7' },
-            { label: 'Rechazadas', valor: visitas.filter(v => v.estado === 'Rechazada').length, color: '#dc2626', bg: '#fee2e2' },
+            { label: 'Total visitas', valor: visitas.length, filtroValor: 'Todas', color: '#1a4d2e', bg: '#e8f5e9' },
+            { label: 'Pendientes', valor: visitas.filter(v => (v.estado || 'Pendiente') === 'Pendiente').length, filtroValor: 'Pendiente', color: '#ca8a04', bg: '#fef9c3' },
+            { label: 'Aprobadas', valor: visitas.filter(v => v.estado === 'Aprobada').length, filtroValor: 'Aprobada', color: '#16a34a', bg: '#dcfce7' },
+            { label: 'Rechazadas', valor: visitas.filter(v => v.estado === 'Rechazada').length, filtroValor: 'Rechazada', color: '#dc2626', bg: '#fee2e2' },
+            { label: 'Finalizadas', valor: visitas.filter(v => v.estado === 'Finalizada').length, filtroValor: 'Finalizada', color: '#1565c0', bg: '#e3f2fd' },
           ].map((s, i) => (
-            <div key={i} style={{ ...styles.statCard, background: s.bg }}>
+            <div key={i} onClick={() => setFiltro(s.filtroValor)} style={{
+              ...styles.statCard, background: s.bg,
+              cursor: 'pointer',
+              outline: filtro === s.filtroValor ? `2px solid ${s.color}` : 'none',
+            }}>
               <span style={{ ...styles.statValor, color: s.color }}>{s.valor}</span>
               <span style={{ ...styles.statLabel, color: s.color }}>{s.label}</span>
             </div>
@@ -86,14 +86,14 @@ export default function CalendarioVisitas() {
 
         {/* FILTROS */}
         <div style={styles.filtros}>
-          {['Pendiente', 'Aprobada', 'Rechazada'].map(f => (
+          {['Todas', 'Pendiente', 'Finalizada', 'Aprobada', 'Rechazada'].map(f => (
             <button key={f} className="btn" style={{
               ...styles.filtroBtn,
               background: filtro === f ? '#1a4d2e' : 'white',
               color: filtro === f ? 'white' : '#555',
               border: filtro === f ? '2px solid #1a4d2e' : '2px solid #e5e7eb',
             }} onClick={() => setFiltro(f)}>
-              {f} ({visitas.filter(v => (v.estado || 'Pendiente') === f).length})
+              {f === 'Todas' ? `Todas (${visitas.length})` : `${f} (${visitas.filter(v => (v.estado || 'Pendiente') === f).length})`}
             </button>
           ))}
         </div>
@@ -101,7 +101,9 @@ export default function CalendarioVisitas() {
         {/* LISTA DE VISITAS */}
         {visitasFiltradas.length === 0 ? (
           <div style={styles.vacio}>
-            <p style={styles.vacioTitulo}>No tienes visitas {filtro.toLowerCase()}s</p>
+            <p style={styles.vacioTitulo}>
+              {filtro === 'Todas' ? 'No tienes visitas asignadas' : `No tienes visitas ${filtro.toLowerCase()}s`}
+            </p>
             <p style={styles.vacioSub}>El administrador te asignará visitas próximamente</p>
           </div>
         ) : (

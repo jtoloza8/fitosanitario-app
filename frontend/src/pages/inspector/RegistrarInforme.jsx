@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 export default function RegistrarInforme() {
   const navigate = useNavigate()
+  const timeoutRef = useRef(null)
   const [visita, setVisita] = useState(null)
   const [lotes, setLotes] = useState([])
   const [plagas, setPlagas] = useState([])
@@ -31,6 +32,7 @@ export default function RegistrarInforme() {
     fetchLotes(visitaActiva.id_lugar_produccion)
     fetchPlagas()
     fetchHallazgos(visitaActiva.id_visita_inspeccion)
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }
   }, [])
 
   const fetchLotes = async (idLugar) => {
@@ -131,7 +133,7 @@ export default function RegistrarInforme() {
       })
       localStorage.removeItem('visita_activa')
       setMensaje('✅ Informe finalizado y enviado al administrador')
-      setTimeout(() => navigate('/inspector/calendario'), 2000)
+      timeoutRef.current = setTimeout(() => navigate('/inspector/calendario'), 2000)
     } catch (err) {
       setError('Error al finalizar el informe')
     }

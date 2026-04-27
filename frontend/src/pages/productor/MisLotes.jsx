@@ -113,8 +113,8 @@ export default function MisLotes() {
         <span style={styles.navLogo}>UdiFica</span>
         <div style={styles.navRight}>
           <span style={styles.navRol}>Hola, {usuario.nombre_completo?.split(' ')[0]}</span>
-          <button style={styles.navBtn} onClick={() => navigate('/productor/solicitar')}>
-            Ver Inspecciones
+          <button style={styles.navBtnInspecciones} onClick={() => navigate('/productor/solicitar')}>
+            📋 Mis Inspecciones
           </button>
           <button style={styles.navLogout}
             onClick={() => { localStorage.clear(); window.location.href = '/' }}>
@@ -151,6 +151,20 @@ export default function MisLotes() {
             {mensaje}
             <span style={{ cursor: 'pointer', marginLeft: '12px' }}
               onClick={() => setMensaje('')}>✕</span>
+          </div>
+        )}
+
+        {/* ACCESO RÁPIDO INSPECCIONES */}
+        {!mostrarForm && (
+          <div style={styles.inspeccionBanner}>
+            <div style={styles.inspeccionIcono}>🔍</div>
+            <div style={styles.inspeccionTexto}>
+              <strong style={styles.inspeccionTitulo}>¿Necesitas una inspección del ICA?</strong>
+              <p style={styles.inspeccionSub}>Solicita que un inspector visite tu finca y revisa el estado de tus solicitudes aquí.</p>
+            </div>
+            <button style={styles.inspeccionBtn} onClick={() => navigate('/productor/solicitar')}>
+              Solicitar inspección →
+            </button>
           </div>
         )}
 
@@ -321,6 +335,12 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.2)', padding: '8px 18px',
     borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif",
   },
+  navBtnInspecciones: {
+    background: 'white', color: '#1a4d2e',
+    border: 'none', padding: '8px 20px',
+    borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem',
+    fontFamily: "'DM Sans', sans-serif", fontWeight: '700',
+  },
   navLogout: {
     background: 'transparent', color: 'rgba(255,255,255,0.6)',
     border: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem',
@@ -382,6 +402,22 @@ const styles = {
     width: '100%', background: '#1a4d2e', color: 'white',
     border: 'none', padding: '16px', borderRadius: '12px',
     cursor: 'pointer', fontSize: '1.1rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
+  },
+  inspeccionBanner: {
+    background: 'white', border: '2px solid #a5d6a7', borderRadius: '16px',
+    padding: '20px 28px', marginBottom: '28px',
+    display: 'flex', alignItems: 'center', gap: '16px',
+    boxShadow: '0 2px 8px rgba(26,77,46,0.06)',
+  },
+  inspeccionIcono: { fontSize: '2rem', flexShrink: 0 },
+  inspeccionTexto: { flex: 1 },
+  inspeccionTitulo: { fontSize: '1rem', color: '#1a4d2e', display: 'block', marginBottom: '4px' },
+  inspeccionSub: { fontSize: '0.85rem', color: '#666', margin: 0 },
+  inspeccionBtn: {
+    background: '#1a4d2e', color: 'white', border: 'none',
+    padding: '12px 24px', borderRadius: '10px', cursor: 'pointer',
+    fontSize: '0.95rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
+    whiteSpace: 'nowrap', flexShrink: 0,
   },
   vacioGrande: {
     textAlign: 'center', padding: '80px 40px', background: 'white',
