@@ -6,6 +6,7 @@ export default function Registro() {
   const navigate = useNavigate()
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
+  const [verPassword, setVerPassword] = useState(false)
   const [form, setForm] = useState({
     nombre_completo: '',
     correo: '',
@@ -74,9 +75,20 @@ export default function Registro() {
             </div>
             <div style={styles.campo}>
               <label style={styles.label}>Contraseña</label>
-              <input style={styles.input} name="password" type="password"
-                placeholder="••••••••"
-                value={form.password} onChange={handleChange} required />
+              <div style={styles.inputWrapper}>
+                <input style={styles.input} name="password"
+                  type={verPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password} onChange={handleChange} required />
+                <button
+                  type="button"
+                  style={styles.ojito}
+                  onClick={() => setVerPassword(!verPassword)}
+                  tabIndex={-1}
+                >
+                  {verPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
             <div style={styles.campo}>
               <label style={styles.label}>Teléfono</label>
@@ -160,10 +172,25 @@ const styles = {
   },
   campo: { marginBottom: '16px' },
   label: { display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.85rem' },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
   input: {
-    width: '100%', padding: '12px 14px', border: '2px solid #e5e7eb',
+    width: '100%', padding: '12px 44px 12px 14px', border: '2px solid #e5e7eb',
     borderRadius: '10px', fontSize: '1rem', outline: 'none',
     boxSizing: 'border-box', fontFamily: 'inherit',
+  },
+  ojito: {
+    position: 'absolute',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
+    padding: '0',
+    lineHeight: 1,
   },
   boton: {
     width: '100%', padding: '14px',

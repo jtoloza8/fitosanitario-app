@@ -28,18 +28,18 @@ const getLugarById = async (req, res) => {
 // Crear un lugar
 const createLugar = async (req, res) => {
   try {
-    const { nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor } = req.body;
+    const { nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor } = req.body
     const result = await pool.query(
       `INSERT INTO lugar_produccion 
-        (nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, estado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'Pendiente') RETURNING *`,
-      [nombre_lugar, numero_registroica, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor]
-    );
-    res.status(201).json(result.rows[0]);
+        (nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, estado)
+       VALUES ($1,$2,$3,$4,$5,$6,'Pendiente') RETURNING *`,
+      [nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor]
+    )
+    res.status(201).json(result.rows[0])
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message })
   }
-};
+}
 
 // Actualizar un lugar
 const updateLugar = async (req, res) => {

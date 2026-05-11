@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { DEPARTAMENTOS_MUNICIPIOS, DEPARTAMENTOS } from '../../data/colombiaDatos'
 
 export default function MisLotes() {
   const navigate = useNavigate()
@@ -14,7 +15,6 @@ export default function MisLotes() {
   const [archivoSubido, setArchivoSubido] = useState(null)
   const [form, setForm] = useState({
     nombre_lugar: '',
-    numero_registroica: '',
     municipio: '',
     departamento: '',
     area_total_ha: '',
@@ -81,7 +81,7 @@ export default function MisLotes() {
       setArchivo(null)
       fetchLugares()
       setForm({
-        nombre_lugar: '', numero_registroica: '', municipio: '',
+        nombre_lugar: '', municipio: '',
         departamento: '', area_total_ha: '', fecha_proxima_visita: '',
         id_productor: usuario.id_productor
       })
@@ -183,23 +183,35 @@ export default function MisLotes() {
                     onChange={e => setForm({ ...form, nombre_lugar: e.target.value })} required />
                 </div>
                 <div style={styles.campo}>
-                  <label style={styles.label}>Número de registro ICA</label>
-                  <input style={styles.input} placeholder="Ej: ICA-2026-001"
-                    value={form.numero_registroica}
-                    onChange={e => setForm({ ...form, numero_registroica: e.target.value })} required />
-                  <span style={styles.ayuda}>Este número está en tu certificado del ICA</span>
+                  <label style={styles.label}>¿En qué departamento?</label>
+                  <select
+                    style={styles.input}
+                    value={form.departamento}
+                    onChange={e => setForm({ ...form, departamento: e.target.value, municipio: '' })}
+                    required
+                  >
+                    <option value="">-- Selecciona un departamento --</option>
+                    {DEPARTAMENTOS.map(dep => (
+                      <option key={dep} value={dep}>{dep}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿En qué municipio está?</label>
-                  <input style={styles.input} placeholder="Ej: Mosquera"
+                  <select
+                    style={styles.input}
                     value={form.municipio}
-                    onChange={e => setForm({ ...form, municipio: e.target.value })} required />
-                </div>
-                <div style={styles.campo}>
-                  <label style={styles.label}>¿En qué departamento?</label>
-                  <input style={styles.input} placeholder="Ej: Cundinamarca"
-                    value={form.departamento}
-                    onChange={e => setForm({ ...form, departamento: e.target.value })} required />
+                    onChange={e => setForm({ ...form, municipio: e.target.value })}
+                    required
+                    disabled={!form.departamento}
+                  >
+                    <option value="">
+                      {form.departamento ? '-- Selecciona un municipio --' : '-- Primero selecciona un departamento --'}
+                    </option>
+                    {(DEPARTAMENTOS_MUNICIPIOS[form.departamento] || []).map(mun => (
+                      <option key={mun} value={mun}>{mun}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿Cuántas hectáreas tiene tu finca?</label>
@@ -290,10 +302,6 @@ export default function MisLotes() {
                         <div style={styles.infoFila}>
                           <span style={styles.infoLabel}>📍 Ubicación</span>
                           <span style={styles.infoValor}>{l.municipio}, {l.departamento}</span>
-                        </div>
-                        <div style={styles.infoFila}>
-                          <span style={styles.infoLabel}>📋 Registro ICA</span>
-                          <span style={styles.infoValor}>{l.numero_registroica}</span>
                         </div>
                         <div style={styles.infoFila}>
                           <span style={styles.infoLabel}>📐 Área</span>

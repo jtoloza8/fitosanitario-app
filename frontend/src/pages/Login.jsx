@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 export default function Login() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
+  const [verPassword, setVerPassword] = useState(false)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const navigate = useNavigate()
@@ -69,14 +70,24 @@ export default function Login() {
 
             <div style={styles.campo}>
               <label style={styles.label}>Contraseña</label>
-              <input
-                style={styles.input}
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div style={styles.inputWrapper}>
+                <input
+                  style={styles.input}
+                  type={verPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  style={styles.ojito}
+                  onClick={() => setVerPassword(!verPassword)}
+                  tabIndex={-1}
+                >
+                  {verPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
 
             <button
@@ -201,14 +212,29 @@ const styles = {
     color: '#333',
     fontSize: '0.85rem',
   },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
   input: {
     width: '100%',
-    padding: '12px 14px',
+    padding: '12px 44px 12px 14px',
     border: '2px solid #e5e7eb',
     borderRadius: '10px',
     fontSize: '1rem',
     outline: 'none',
     boxSizing: 'border-box',
+  },
+  ojito: {
+    position: 'absolute',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
+    padding: '0',
+    lineHeight: 1,
   },
   boton: {
     width: '100%',
