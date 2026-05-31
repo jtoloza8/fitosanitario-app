@@ -60,16 +60,24 @@ export default function RegistrarInforme() {
     const visitaActiva = JSON.parse(localStorage.getItem('visita_activa') || 'null')
     if (!visitaActiva) { navigate('/inspector/calendario'); return }
     setVisita(visitaActiva)
-    fetchLotes(visitaActiva.id_lugar_produccion)
+    fetchLotes(visitaActiva.id_lugar_produccion, visitaActiva.id_lote)
     fetchPlagas()
     fetchHallazgos(visitaActiva.id_visita_inspeccion)
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }
   }, [])
 
-  const fetchLotes = async (idLugar) => {
+  const fetchLotes = async (idLugar, idLoteAsignado) => {
     try {
       const res = await axios.get(`http://localhost:3000/api/lotes/lugar/${idLugar}`)
       setLotes(res.data)
+      if (idLoteAsignado) {
+        const lote = res.data.find(l => l.id_lote === idLoteAsignado)
+        if (lote) {
+          setLoteSeleccionado(lote.id_lote)
+          setLoteActivo(lote)
+          setForm(prev => ({ ...prev, area_registrada: lote.area_ha || '' }))
+        }
+      }
     } catch (err) { console.error(err) }
   }
 
@@ -109,6 +117,13 @@ export default function RegistrarInforme() {
     return             { label: 'Bajo',  color: '#16a34a', bg: '#dcfce7' }
   }
 
+  const plantasMuestreadas = (idLote) =>
+    hallazgos.filter(h => h.id_lote === idLote).reduce((s, h) => s + parseInt(h.especie_muestreadas || 0), 0)
+
+  const plantasDisponibles = loteActivo
+    ? parseInt(loteActivo.total_plantas_lote) - plantasMuestreadas(loteActivo.id_lote)
+    : null
+
   const handleGuardar = async () => {
     setError('')
     if (!loteSeleccionado)                              return setError('Selecciona un lote')
@@ -118,8 +133,10 @@ export default function RegistrarInforme() {
     const muestreadas = parseInt(form.especie_muestreadas)
     const afectadas   = parseInt(form.especie_afectadas)
     if (afectadas > muestreadas) return setError('Las plantas afectadas no pueden superar las muestreadas')
-    if (loteActivo && parseFloat(form.area_registrada) > parseFloat(loteActivo.area_ha))
-      return setError(`El área no puede superar las ${loteActivo.area_ha} ha del lote`)
+    if (plantasDisponibles !== null && muestreadas > plantasDisponibles)
+      return setError(`Solo puedes muestrear ${plantasDisponibles} plantas más en este lote (${parseInt(loteActivo.total_plantas_lote)} totales, ${plantasMuestreadas(loteActivo.id_lote)} ya muestreadas)`)
+    if (loteActivo && parseInt(form.area_registrada) > Math.round(parseFloat(loteActivo.area_ha)))
+      return setError(`El área no puede superar las ${Math.round(loteActivo.area_ha)} ha del lote`)
 
     setCargando(true)
     try {
@@ -128,15 +145,26 @@ export default function RegistrarInforme() {
         especie_muestreadas: muestreadas,
         especie_afectadas: afectadas,
         estado_aprobacion: nivelAlerta(porcentaje).label,
-        area_registrada: form.area_registrada || 0,
+        area_registrada: Math.round(parseFloat(form.area_registrada || 0)),
         informacion_de_produccion: form.informacion_de_produccion,
         id_lote: loteSeleccionado,
         id_plaga: plagaSeleccionada,
         id_visita_inspeccion: visita.id_visita_inspeccion,
       })
       setMensaje('Hallazgo guardado correctamente')
+      setPlagaSeleccionada(null)
       setForm({ especie_muestreadas: '', especie_afectadas: '', area_registrada: '', informacion_de_produccion: '' })
-      setLoteSeleccionado(null); setLoteActivo(null); setPlagaSeleccionada(null)
+      // Si hay lote asignado por productor lo mantenemos seleccionado; si no, limpiamos
+      if (visita?.id_lote) {
+        const loteAsig = lotes.find(l => l.id_lote === visita.id_lote)
+        if (loteAsig) {
+          setLoteSeleccionado(loteAsig.id_lote)
+          setLoteActivo(loteAsig)
+        }
+      } else {
+        setLoteSeleccionado(null)
+        setLoteActivo(null)
+      }
       fetchHallazgos(visita.id_visita_inspeccion)
     } catch {
       setError('Error al guardar el hallazgo')
@@ -270,14 +298,28 @@ export default function RegistrarInforme() {
 
             <div style={s.campo}>
               <label style={s.label}>Lote a evaluar</label>
-              <select style={s.input} value={loteSeleccionado || ''} onChange={handleSeleccionarLote}>
-                <option value="">Selecciona un lote...</option>
-                {lotes.map(l => (
-                  <option key={l.id_lote} value={l.id_lote}>
-                    {l.nombre_lote} — {l.especie} ({l.total_plantas_lote} plantas)
-                  </option>
-                ))}
-              </select>
+              {visita?.id_lote ? (
+                <div style={s.loteAsignado}>
+                  <span style={s.loteAsignadoIcono}>📍</span>
+                  <div>
+                    <p style={s.loteAsignadoNombre}>{visita.nombre_lote || loteActivo?.nombre_lote}</p>
+                    <p style={s.loteAsignadoSub}>
+                      {visita.lote_especie || loteActivo?.especie}
+                      {loteActivo && ` · ${loteActivo.total_plantas_lote} plantas · ${Math.round(loteActivo.area_ha)} ha`}
+                    </p>
+                  </div>
+                  <span style={s.loteAsignadoBadge}>Asignado por productor</span>
+                </div>
+              ) : (
+                <select style={s.input} value={loteSeleccionado || ''} onChange={handleSeleccionarLote}>
+                  <option value="">Selecciona un lote...</option>
+                  {lotes.map(l => (
+                    <option key={l.id_lote} value={l.id_lote}>
+                      {l.nombre_lote} — {l.especie} ({l.total_plantas_lote} plantas)
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div style={s.campo}>
@@ -318,10 +360,22 @@ export default function RegistrarInforme() {
               })()}
             </div>
 
+            {loteActivo && plantasDisponibles !== null && (
+              <div style={s.plantasHint}>
+                <span>🌱</span>
+                <span>
+                  Plantas disponibles para muestrear: <strong>{plantasDisponibles}</strong>
+                  <span style={{ color: '#aaa' }}> / {parseInt(loteActivo.total_plantas_lote)} totales</span>
+                </span>
+              </div>
+            )}
+
             <div style={s.gridDos}>
               <div style={s.campo}>
                 <label style={s.label}>Plantas muestreadas</label>
-                <input style={s.input} type="number" min="0" placeholder="0"
+                <input style={s.input} type="number" min="0"
+                  max={plantasDisponibles ?? ''}
+                  placeholder={plantasDisponibles !== null ? `Máx: ${plantasDisponibles}` : '0'}
                   value={form.especie_muestreadas}
                   onChange={e => setForm({ ...form, especie_muestreadas: e.target.value })} />
               </div>
@@ -346,14 +400,14 @@ export default function RegistrarInforme() {
 
             <div style={s.campo}>
               <label style={s.label}>Área registrada (ha)</label>
-              <input style={s.input} type="number" step="0.1" min="0.1"
-                max={loteActivo?.area_ha || ''}
-                placeholder={loteActivo ? `Máx: ${loteActivo.area_ha} ha` : 'Selecciona un lote primero'}
+              <input style={s.input} type="number" step="1" min="1"
+                max={loteActivo ? Math.round(loteActivo.area_ha) : ''}
+                placeholder={loteActivo ? `Máx: ${Math.round(loteActivo.area_ha)} ha` : 'Selecciona un lote primero'}
                 value={form.area_registrada}
                 onChange={e => setForm({ ...form, area_registrada: e.target.value })}
                 disabled={!loteActivo} />
               {loteActivo && (
-                <span style={s.areaHint}>Este lote tiene {loteActivo.area_ha} hectáreas disponibles</span>
+                <span style={s.areaHint}>Este lote tiene {Math.round(loteActivo.area_ha)} hectáreas</span>
               )}
             </div>
 
@@ -391,7 +445,7 @@ export default function RegistrarInforme() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <div>
                           <p style={s.hallazgoTitulo}>{loteNombre} — {plagaNombre}</p>
-                          <p style={s.hallazgoDato}>{h.especie_muestreadas} muestreadas / {h.especie_afectadas} afectadas · {h.area_registrada} ha</p>
+                          <p style={s.hallazgoDato}>{h.especie_muestreadas} muestreadas / {h.especie_afectadas} afectadas · {Math.round(h.area_registrada)} ha</p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                           <span style={{ ...s.hallazgoPct, color: '#1a4d2e' }}>{parseFloat(h.porcentaje_incidencia).toFixed(1)}%</span>
@@ -625,6 +679,12 @@ const s = {
   incidenciaVal: { fontSize: '1.8rem', fontFamily: "'DM Serif Display', serif", lineHeight: 1 },
   alertaBadge: { color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: '700' },
   areaHint: { fontSize: '0.75rem', color: '#40916c', marginTop: '4px', display: 'block' },
+  plantasHint: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '4px', fontSize: '0.82rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' },
+  loteAsignado: { background: '#e8f5e9', border: '2px solid #a5d6a7', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px' },
+  loteAsignadoIcono: { fontSize: '1.4rem', flexShrink: 0 },
+  loteAsignadoNombre: { fontSize: '0.95rem', fontWeight: '700', color: '#1a4d2e', marginBottom: '2px' },
+  loteAsignadoSub: { fontSize: '0.8rem', color: '#40916c' },
+  loteAsignadoBadge: { marginLeft: 'auto', background: '#1a4d2e', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 },
   btnGuardar: { width: '100%', background: '#1a4d2e', color: 'white', border: 'none', padding: '13px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginTop: '8px' },
 
   // Hallazgos

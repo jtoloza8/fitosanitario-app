@@ -53,6 +53,7 @@ export default function AsignarInspector() {
         periodo_reportado: form.periodo_reportado || `Q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}`,
         id_inspector: parseInt(form.id_inspector),
         id_lugar_produccion: solicitudSeleccionada.id_lugar_produccion,
+        id_lote: solicitudSeleccionada.id_lote || null,
       })
 
       // Aprobar la solicitud

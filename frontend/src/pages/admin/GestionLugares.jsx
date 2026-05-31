@@ -164,16 +164,12 @@ export default function GestionInspecciones() {
 
               <div style={styles.detalleInfo}>
                 <div style={styles.detalleItem}>
-                  <span style={styles.detalleLabel}>Registro ICA</span>
-                  <span style={styles.detalleValor}>{lugarSeleccionado.numero_registroica}</span>
-                </div>
-                <div style={styles.detalleItem}>
                   <span style={styles.detalleLabel}>Ubicación</span>
                   <span style={styles.detalleValor}>{lugarSeleccionado.municipio}, {lugarSeleccionado.departamento}</span>
                 </div>
                 <div style={styles.detalleItem}>
                   <span style={styles.detalleLabel}>Área total</span>
-                  <span style={styles.detalleValor}>{lugarSeleccionado.area_total_m2} m²</span>
+                  <span style={styles.detalleValor}>{Math.round(lugarSeleccionado.area_total_ha)} ha</span>
                 </div>
                 <div style={styles.detalleItem}>
                   <span style={styles.detalleLabel}>Estado actual</span>

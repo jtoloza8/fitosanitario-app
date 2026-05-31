@@ -5,10 +5,12 @@ const getVisitas = async (req, res) => {
     const result = await pool.query(`
       SELECT v.*, f.nombre_completo as nombre_inspector,
              l.nombre_lugar, l.latitud, l.longitud,
-             l.municipio as lugar_municipio, l.departamento as lugar_departamento
+             l.municipio as lugar_municipio, l.departamento as lugar_departamento,
+             lo.nombre_lote, lo.especie as lote_especie, lo.area_ha as lote_area_ha
       FROM visita_inspeccion v
       LEFT JOIN funcionario_ica f ON v.id_inspector = f.id_funcionario
       LEFT JOIN lugar_produccion l ON v.id_lugar_produccion = l.id_lugar_produccion
+      LEFT JOIN lote lo ON v.id_lote = lo.id_lote
     `);
     res.json(result.rows);
   } catch (err) {
@@ -44,12 +46,12 @@ const getVisitaById = async (req, res) => {
 
 const createVisita = async (req, res) => {
   try {
-    const { fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion } = req.body;
+    const { fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion, id_lote } = req.body;
     const result = await pool.query(
-      `INSERT INTO visita_inspeccion 
-        (fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion, estado)
-       VALUES ($1,$2,$3,$4,$5,$6,'Pendiente') RETURNING *`,
-      [fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion]
+      `INSERT INTO visita_inspeccion
+        (fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion, id_lote, estado)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'Pendiente') RETURNING *`,
+      [fecha, hora_inicio, hora_fin, periodo_reportado, id_inspector, id_lugar_produccion, id_lote || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

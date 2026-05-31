@@ -117,7 +117,7 @@ export default function MisLotes() {
           <button style={styles.navBtnInspecciones} onClick={() => navigate('/productor/solicitar')}>
             + Pedir visita
           </button>
-          <button style={{ ...styles.navBtnInspecciones, background: 'rgba(255,255,255,0.12)' }} onClick={() => navigate('/productor/inspecciones')}>
+          <button style={styles.navBtnInspecciones} onClick={() => navigate('/productor/inspecciones')}>
             📋 Ver inspecciones
           </button>
           <button style={styles.navLogout}
@@ -219,7 +219,7 @@ export default function MisLotes() {
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿Cuántas hectáreas tiene tu finca?</label>
-                  <input style={styles.input} type="number" step="0.1" placeholder="Ej: 5.5"
+                  <input style={styles.input} type="number" step="1" min="1" placeholder="Ej: 5"
                     value={form.area_total_ha}
                     onChange={e => setForm({ ...form, area_total_ha: e.target.value })} required />
                   <span style={styles.ayuda}>Ingresa el área en hectáreas</span>

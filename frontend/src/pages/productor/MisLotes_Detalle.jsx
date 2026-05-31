@@ -112,13 +112,13 @@ export default function MisLotesDetalle() {
             </div>
             <div style={styles.statDivider} />
             <div style={styles.statItem}>
-              <span style={styles.statNum}>{areaUsada.toFixed(1)}</span>
+              <span style={styles.statNum}>{Math.round(areaUsada)}</span>
               <span style={styles.statLabel}>Ha asignadas</span>
             </div>
             <div style={styles.statDivider} />
             <div style={styles.statItem}>
-              <span style={{ ...styles.statNum, color: areaDisponible <= 0 ? '#dc2626' : '#16a34a' }}>
-                {areaDisponible.toFixed(1)}
+              <span style={{ ...styles.statNum, color: areaDisponible <= 0 ? '#ff6b6b' : 'white' }}>
+                {Number(areaDisponible.toFixed(2))}
               </span>
               <span style={styles.statLabel}>Ha disponibles</span>
             </div>
@@ -190,11 +190,11 @@ export default function MisLotesDetalle() {
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>Área del lote (hectáreas)</label>
-                  <input style={styles.input} type="number" step="0.1" min="0.1"
-                    placeholder={`Máx: ${areaDisponible.toFixed(1)} ha disponibles`}
+                  <input style={styles.input} type="number" step="1" min="1"
+                    placeholder={`Máx: ${Math.round(areaDisponible)} ha disponibles`}
                     value={form.area_ha}
                     onChange={e => setForm({ ...form, area_ha: e.target.value })} required />
-                  <span style={styles.ayuda}>Tienes {areaDisponible.toFixed(1)} hectáreas disponibles</span>
+                  <span style={styles.ayuda}>Tienes {Math.round(areaDisponible)} hectáreas disponibles</span>
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿Cuántas plantas tiene el lote?</label>
@@ -327,7 +327,7 @@ const styles = {
   formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
   campo: { display: 'flex', flexDirection: 'column', gap: '6px' },
   label: { fontSize: '0.9rem', fontWeight: '600', color: '#333' },
-  ayuda: { fontSize: '0.78rem', color: '#40916c', fontStyle: 'italic' },
+  ayuda: { fontSize: '0.78rem', color: '#888', fontStyle: 'italic' },
   input: {
     padding: '12px 14px', border: '2px solid #e5e7eb', borderRadius: '10px',
     fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s', width: '100%',
