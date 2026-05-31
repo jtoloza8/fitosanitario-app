@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import Footer from '../../components/Footer'
 import { DEPARTAMENTOS_MUNICIPIOS, DEPARTAMENTOS } from '../../data/colombiaDatos'
 
 export default function MisLotes() {
@@ -114,7 +115,10 @@ export default function MisLotes() {
         <div style={styles.navRight}>
           <span style={styles.navRol}>Hola, {usuario.nombre_completo?.split(' ')[0]}</span>
           <button style={styles.navBtnInspecciones} onClick={() => navigate('/productor/solicitar')}>
-            📋 Mis Inspecciones
+            + Pedir visita
+          </button>
+          <button style={{ ...styles.navBtnInspecciones, background: 'rgba(255,255,255,0.12)' }} onClick={() => navigate('/productor/inspecciones')}>
+            📋 Ver inspecciones
           </button>
           <button style={styles.navLogout}
             onClick={() => { localStorage.clear(); window.location.href = '/' }}>
@@ -136,8 +140,8 @@ export default function MisLotes() {
             </p>
           </div>
           <button style={styles.btnNuevo}
-            onClick={() => setMostrarForm(!mostrarForm)}>
-            {mostrarForm ? '✕ Cancelar' : '+ Registrar nueva finca'}
+            onClick={() => navigate('/productor/registrar-lugar')}>
+            + Registrar nueva finca
           </button>
         </div>
 
@@ -277,7 +281,7 @@ export default function MisLotes() {
             <div style={styles.vacioIcono}>🌱</div>
             <h2 style={styles.vacioTitulo}>Aún no tienes fincas registradas</h2>
             <p style={styles.vacioSub}>Registra tu primera finca para comenzar el proceso de inspección del ICA</p>
-            <button style={styles.btnNuevo} onClick={() => setMostrarForm(true)}>
+            <button style={styles.btnNuevo} onClick={() => navigate('/productor/registrar-lugar')}>
               + Registrar mi primera finca
             </button>
           </div>
@@ -325,6 +329,7 @@ export default function MisLotes() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

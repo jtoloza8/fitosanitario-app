@@ -28,12 +28,13 @@ const getLugarById = async (req, res) => {
 // Crear un lugar
 const createLugar = async (req, res) => {
   try {
-    const { nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor } = req.body
+    const { nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, latitud, longitud } = req.body
     const result = await pool.query(
-      `INSERT INTO lugar_produccion 
-        (nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, estado)
-       VALUES ($1,$2,$3,$4,$5,$6,'Pendiente') RETURNING *`,
-      [nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor]
+      `INSERT INTO lugar_produccion
+        (nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor, estado, latitud, longitud)
+       VALUES ($1,$2,$3,$4,$5,$6,'Pendiente',$7,$8) RETURNING *`,
+      [nombre_lugar, municipio, departamento, area_total_ha, fecha_proxima_visita, id_productor,
+       latitud || null, longitud || null]
     )
     res.status(201).json(result.rows[0])
   } catch (err) {

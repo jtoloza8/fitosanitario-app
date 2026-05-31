@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import Footer from '../../components/Footer'
 
 export default function GestionInspecciones() {
   const navigate = useNavigate()
@@ -257,6 +258,7 @@ export default function GestionInspecciones() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

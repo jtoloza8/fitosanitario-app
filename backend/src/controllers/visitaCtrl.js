@@ -3,7 +3,9 @@ const pool = require('../db/postgres');
 const getVisitas = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT v.*, f.nombre_completo as nombre_inspector, l.nombre_lugar
+      SELECT v.*, f.nombre_completo as nombre_inspector,
+             l.nombre_lugar, l.latitud, l.longitud,
+             l.municipio as lugar_municipio, l.departamento as lugar_departamento
       FROM visita_inspeccion v
       LEFT JOIN funcionario_ica f ON v.id_inspector = f.id_funcionario
       LEFT JOIN lugar_produccion l ON v.id_lugar_produccion = l.id_lugar_produccion
@@ -18,10 +20,18 @@ const getVisitaById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      `SELECT v.*, f.nombre_completo as nombre_inspector, l.nombre_lugar
+      `SELECT v.*,
+              f.nombre_completo as nombre_inspector,
+              l.nombre_lugar, l.latitud, l.longitud,
+              l.municipio as lugar_municipio, l.departamento as lugar_departamento,
+              l.area_total_ha,
+              pr.nombre_completo as nombre_productor,
+              pr.identificacion as cedula_productor,
+              pr.telefono as telefono_productor
        FROM visita_inspeccion v
        LEFT JOIN funcionario_ica f ON v.id_inspector = f.id_funcionario
        LEFT JOIN lugar_produccion l ON v.id_lugar_produccion = l.id_lugar_produccion
+       LEFT JOIN productores pr ON l.id_productor = pr.id_productor
        WHERE v.id_visita_inspeccion = $1`, [id]
     );
     if (result.rows.length === 0)

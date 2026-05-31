@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import Footer from '../../components/Footer'
+import MapaFinca from '../../components/MapaFinca'
 
 export default function GestionInspecciones() {
   const navigate = useNavigate()
@@ -146,6 +148,20 @@ export default function GestionInspecciones() {
             <div style={styles.detalle}>
               <h2 style={styles.detalleTitulo}>{lugarSeleccionado.nombre_lugar}</h2>
 
+              {/* MAPA DE UBICACIÓN */}
+              <div style={{ marginBottom: '20px' }}>
+                <p style={styles.mapaLabel}>Ubicación del predio</p>
+                <MapaFinca
+                  key={lugarSeleccionado.id_lugar_produccion}
+                  latitud={lugarSeleccionado.latitud}
+                  longitud={lugarSeleccionado.longitud}
+                  nombre={lugarSeleccionado.nombre_lugar}
+                  municipio={lugarSeleccionado.municipio}
+                  departamento={lugarSeleccionado.departamento}
+                  altura={220}
+                />
+              </div>
+
               <div style={styles.detalleInfo}>
                 <div style={styles.detalleItem}>
                   <span style={styles.detalleLabel}>Registro ICA</span>
@@ -214,6 +230,7 @@ export default function GestionInspecciones() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
@@ -270,7 +287,8 @@ const styles = {
     border: '1px solid #e8efe8', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
     height: 'fit-content', position: 'sticky', top: '24px',
   },
-  detalleTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.6rem', color: '#1a4d2e', marginBottom: '20px' },
+  detalleTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.6rem', color: '#1a4d2e', marginBottom: '16px' },
+  mapaLabel: { fontSize: '0.72rem', fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' },
   detalleInfo: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' },
   detalleItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   detalleLabel: { fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#aaa', fontWeight: '600' },

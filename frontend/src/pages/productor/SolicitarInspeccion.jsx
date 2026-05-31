@@ -1,74 +1,44 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import Footer from '../../components/Footer'
+import MapaFinca from '../../components/MapaFinca'
 
 export default function SolicitarInspeccion() {
   const navigate = useNavigate()
   const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
-  const [lugares, setLugares] = useState([])
-  const [lotes, setLotes] = useState([])
-  const [solicitudes, setSolicitudes] = useState([])
-  const [visitas, setVisitas] = useState([])
-  const [lugarSeleccionado, setLugarSeleccionado] = useState(null)
-  const [mensaje, setMensaje] = useState('')
-  const [error, setError] = useState('')
-  const [cargando, setCargando] = useState(false)
-  const [form, setForm] = useState({
-    id_lote: '',
-    fecha_solicitada: '',
-    motivo: '',
-  })
 
-  useEffect(() => {
-    fetchLugares()
-    fetchSolicitudes()
-    fetchVisitas()
-  }, [])
+  const [lugares, setLugares]               = useState([])
+  const [lotes, setLotes]                   = useState([])
+  const [lugarSeleccionado, setLugarSel]    = useState(null)
+  const [mensaje, setMensaje]               = useState('')
+  const [error, setError]                   = useState('')
+  const [cargando, setCargando]             = useState(false)
+  const [form, setForm] = useState({ id_lote: '', fecha_solicitada: '', motivo: '' })
+
+  useEffect(() => { fetchLugares() }, [])
 
   const fetchLugares = async () => {
     try {
       const res = await axios.get('http://localhost:3000/api/lugares')
-      const aprobados = res.data.filter(l =>
-        l.id_productor === usuario.id_productor && l.estado === 'Aprobado'
-      )
-      setLugares(aprobados)
-    } catch (err) { console.error(err) }
+      setLugares(res.data.filter(l => l.id_productor === usuario.id_productor && l.estado === 'Aprobado'))
+    } catch {}
   }
 
-  const fetchSolicitudes = async () => {
-    try {
-      const res = await axios.get(`http://localhost:3000/api/solicitudes/productor/${usuario.id_productor}`)
-      setSolicitudes(res.data)
-    } catch (err) { console.error(err) }
-  }
-
-  const fetchVisitas = async () => {
-    try {
-      const res = await axios.get('http://localhost:3000/api/visitas')
-      setVisitas(res.data)
-    } catch (err) { console.error(err) }
-  }
-
-  const fetchLotes = async (idLugar) => {
-    try {
-      const res = await axios.get(`http://localhost:3000/api/lotes/lugar/${idLugar}`)
-      setLotes(res.data)
-    } catch (err) { console.error(err) }
-  }
-
-  const handleSeleccionarLugar = (lugar) => {
-    setLugarSeleccionado(lugar)
-    setLotes([])
+  const seleccionarLugar = async (l) => {
+    setLugarSel(l)
     setForm({ id_lote: '', fecha_solicitada: '', motivo: '' })
-    fetchLotes(lugar.id_lugar_produccion)
+    try {
+      const res = await axios.get(`http://localhost:3000/api/lotes/lugar/${l.id_lugar_produccion}`)
+      setLotes(res.data)
+    } catch { setLotes([]) }
   }
 
-  const handleSolicitar = async (e) => {
-    e.preventDefault()
+  const handleEnviar = async () => {
     setError('')
-    if (!lugarSeleccionado) return setError('Selecciona una finca')
-    if (!form.id_lote) return setError('Selecciona un lote')
-    if (!form.fecha_solicitada) return setError('Selecciona una fecha')
+    if (!lugarSeleccionado) return setError('Elige tu finca primero')
+    if (!form.id_lote)      return setError('Elige qué lote quieres revisar')
+    if (!form.fecha_solicitada) return setError('Elige una fecha para la visita')
 
     setCargando(true)
     try {
@@ -79,369 +49,302 @@ export default function SolicitarInspeccion() {
         fecha_solicitada: form.fecha_solicitada,
         motivo: form.motivo,
       })
-      setMensaje('✅ Solicitud enviada correctamente. El administrador la revisará pronto.')
-      setForm({ id_lote: '', fecha_solicitada: '', motivo: '' })
-      setLugarSeleccionado(null)
-      setLotes([])
-      fetchSolicitudes()
-    } catch (err) {
-      setError('❌ Error al enviar la solicitud')
+      setMensaje('ok')
+    } catch {
+      setError('Hubo un problema al enviar. Inténtalo de nuevo.')
     } finally {
       setCargando(false)
     }
   }
 
-  const estadoColorSolicitud = (estado) => {
-    if (estado === 'Aprobada') return { bg: '#dcfce7', color: '#16a34a' }
-    if (estado === 'Rechazada') return { bg: '#fee2e2', color: '#dc2626' }
-    return { bg: '#fef9c3', color: '#ca8a04' }
-  }
-
-  const estadoColorVisita = (estado) => {
-    if (estado === 'Aprobada') return { bg: '#dcfce7', color: '#16a34a' }
-    if (estado === 'Rechazada') return { bg: '#fee2e2', color: '#dc2626' }
-    if (estado === 'Finalizada') return { bg: '#e3f2fd', color: '#1565c0' }
-    return { bg: '#fef9c3', color: '#ca8a04' }
-  }
-
-  const misVisitas = visitas.filter(v =>
-    lugares.some(l => l.id_lugar_produccion === v.id_lugar_produccion)
-  )
-
-  return (
-    <div style={styles.page}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        input:focus, select:focus, textarea:focus { border-color: #1a4d2e !important; outline: none; }
-        .lugar-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important; }
-        .btn:hover { opacity: 0.85; }
-      `}</style>
-
-      {/* NAVBAR */}
-      <nav style={styles.navbar}>
-        <span style={styles.navLogo}>UdiFica</span>
-        <div style={styles.navRight}>
-          <span style={styles.navRol}>Hola, {usuario.nombre_completo?.split(' ')[0]}</span>
-          <button style={styles.navBtn} onClick={() => navigate('/productor/lotes')}>
-            Mis Fincas
-          </button>
-          <button style={styles.navLogout}
-            onClick={() => { localStorage.clear(); window.location.href = '/' }}>
-            Salir
-          </button>
-        </div>
-      </nav>
-
-      <div style={styles.contenido}>
-
-        {/* HEADER */}
-        <div style={styles.header}>
-          <div>
-            <p style={styles.headerSub}>Panel del Productor</p>
-            <h1 style={styles.headerTitulo}>Mis Inspecciones</h1>
+  // ── PANTALLA DE ÉXITO ──────────────────────────────────────────
+  if (mensaje === 'ok') {
+    return (
+      <div style={s.page}>
+        <style>{css}</style>
+        <nav style={s.navbar}><NavContent navigate={navigate} usuario={usuario} /></nav>
+        <div style={s.exitoPage}>
+          <div style={s.exitoCard}>
+            <div style={s.exitoIcono}>✅</div>
+            <h1 style={s.exitoTitulo}>¡Solicitud enviada!</h1>
+            <p style={s.exitoDesc}>
+              Le avisamos al ICA que quieres una visita en
+              <strong> {lugarSeleccionado?.nombre_lugar}</strong>.
+              <br />Ellos te confirmarán la fecha pronto.
+            </p>
+            <button className="btn" style={s.btnExito}
+              onClick={() => navigate('/productor/inspecciones')}>
+              Ver mis inspecciones →
+            </button>
+            <button className="btn" style={s.btnExitoSecundario}
+              onClick={() => { setMensaje(''); setLugarSel(null); setForm({ id_lote: '', fecha_solicitada: '', motivo: '' }) }}>
+              Pedir otra visita
+            </button>
           </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  // ── FORMULARIO ─────────────────────────────────────────────────
+  return (
+    <div style={s.page}>
+      <style>{css}</style>
+
+      <nav style={s.navbar}><NavContent navigate={navigate} usuario={usuario} /></nav>
+
+      <div style={s.contenido}>
+
+        {/* ENCABEZADO */}
+        <div style={s.header}>
+          <div style={s.headerIcono}>🌿</div>
+          <div>
+            <h1 style={s.headerTitulo}>Pedir visita del ICA</h1>
+            <p style={s.headerDesc}>
+              Un inspector del ICA vendrá a revisar tu finca y te dará un certificado.
+              Solo sigue los 3 pasos de abajo.
+            </p>
+          </div>
+          <button className="btn" style={s.btnVerHistorial}
+            onClick={() => navigate('/productor/inspecciones')}>
+            📋 Ver mis inspecciones
+          </button>
         </div>
 
         {error && (
-          <div style={styles.error}>
-            {error}
-            <span style={{ cursor: 'pointer' }} onClick={() => setError('')}>✕</span>
-          </div>
-        )}
-        {mensaje && (
-          <div style={styles.exito}>
-            {mensaje}
-            <span style={{ cursor: 'pointer' }} onClick={() => setMensaje('')}>✕</span>
+          <div style={s.msgError}>{error}
+            <span style={{ cursor: 'pointer', marginLeft: '12px' }} onClick={() => setError('')}>✕</span>
           </div>
         )}
 
-        <div style={styles.layout}>
+        {/* ── PASO 1 ── */}
+        <div style={s.paso}>
+          <div style={s.pasoHeader}>
+            <div style={{ ...s.pasoNum, background: lugarSeleccionado ? '#1a4d2e' : '#f5f7f5', color: lugarSeleccionado ? 'white' : '#1a4d2e' }}>
+              {lugarSeleccionado ? '✓' : '1'}
+            </div>
+            <div>
+              <p style={s.pasoTitulo}>¿A cuál finca viene el ICA?</p>
+              <p style={s.pasoDes}>Toca la finca que quieres inspeccionar</p>
+            </div>
+          </div>
 
-          {/* FORMULARIO SOLICITUD */}
-          <div>
-            <h2 style={styles.seccionTitulo}>Nueva solicitud</h2>
-            <p style={styles.seccionSub}>Selecciona la finca y el lote que quieres inspeccionar</p>
-
-            {/* PASO 1 */}
-            <div style={styles.paso}>
-              <div style={styles.pasoHeader}>
-                <span style={styles.pasoNum}>1</span>
-                <span style={styles.pasoTitulo}>Selecciona tu finca</span>
-              </div>
-              {lugares.length === 0 ? (
-                <div style={styles.vacioPaso}>
-                  No tienes fincas aprobadas.
-                  <span style={styles.vacioPasoLink}
-                    onClick={() => navigate('/productor/lotes')}> Ver mis fincas →</span>
-                </div>
-              ) : (
-                <div style={styles.lugaresList}>
-                  {lugares.map((l, i) => (
-                    <div key={i} className="lugar-card" style={{
-                      ...styles.lugarCard,
-                      borderLeft: lugarSeleccionado?.id_lugar_produccion === l.id_lugar_produccion
-                        ? '4px solid #1a4d2e' : '4px solid transparent',
-                      background: lugarSeleccionado?.id_lugar_produccion === l.id_lugar_produccion
-                        ? '#e8f5e9' : 'white',
-                    }} onClick={() => handleSeleccionarLugar(l)}>
-                      <h3 style={styles.lugarNombre}>{l.nombre_lugar}</h3>
-                      <p style={styles.lugarDato}>{l.municipio}, {l.departamento}</p>
+          {lugares.length === 0 ? (
+            <div style={s.sinFincas}>
+              <p style={s.sinFincasTxt}>No tienes fincas aprobadas todavía.</p>
+              <button className="btn" style={s.btnIrFincas} onClick={() => navigate('/productor/lotes')}>
+                Ver mis fincas →
+              </button>
+            </div>
+          ) : (
+            <div style={s.fincasGrid}>
+              {lugares.map(l => {
+                const sel = lugarSeleccionado?.id_lugar_produccion === l.id_lugar_produccion
+                return (
+                  <div key={l.id_lugar_produccion} className="fcard"
+                    style={{ ...s.fincaCard, background: sel ? '#e8f5e9' : 'white', border: sel ? '3px solid #1a4d2e' : '2px solid #e8efe8' }}
+                    onClick={() => seleccionarLugar(l)}>
+                    <div style={s.fincaCardTop}>
+                      <span style={{ fontSize: '1.8rem' }}>🏡</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ ...s.fincaNombre, color: sel ? '#1a4d2e' : '#333' }}>{l.nombre_lugar}</p>
+                        <p style={s.fincaDato}>📍 {l.municipio}, {l.departamento}</p>
+                        <p style={s.fincaDato}>🌿 {l.area_total_ha} hectáreas</p>
+                      </div>
+                      {sel && <span style={s.checkSel}>✓</span>}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Mini mapa cuando hay finca seleccionada */}
+          {lugarSeleccionado && (
+            <div style={{ marginTop: '14px' }}>
+              <MapaFinca
+                key={lugarSeleccionado.id_lugar_produccion}
+                latitud={lugarSeleccionado.latitud}
+                longitud={lugarSeleccionado.longitud}
+                nombre={lugarSeleccionado.nombre_lugar}
+                municipio={lugarSeleccionado.municipio}
+                departamento={lugarSeleccionado.departamento}
+                altura={180}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ── PASO 2 ── */}
+        {lugarSeleccionado && (
+          <div style={s.paso}>
+            <div style={s.pasoHeader}>
+              <div style={{ ...s.pasoNum, background: form.id_lote ? '#1a4d2e' : '#f5f7f5', color: form.id_lote ? 'white' : '#1a4d2e' }}>
+                {form.id_lote ? '✓' : '2'}
+              </div>
+              <div>
+                <p style={s.pasoTitulo}>¿Qué lote quieres revisar?</p>
+                <p style={s.pasoDes}>Elige el pedazo de la finca que el inspector va a revisar</p>
+              </div>
             </div>
 
-            {/* PASO 2 */}
-            {lugarSeleccionado && (
-              <div style={styles.paso}>
-                <div style={styles.pasoHeader}>
-                  <span style={styles.pasoNum}>2</span>
-                  <span style={styles.pasoTitulo}>Selecciona el lote a inspeccionar</span>
-                </div>
-                {lotes.length === 0 ? (
-                  <div style={styles.vacioPaso}>
-                    Esta finca no tiene lotes.
-                    <span style={styles.vacioPasoLink}
-                      onClick={() => {
-                        localStorage.setItem('lugar_activo', JSON.stringify(lugarSeleccionado))
-                        navigate(`/productor/lotes/${lugarSeleccionado.id_lugar_produccion}`)
-                      }}> Crear lotes →</span>
-                  </div>
-                ) : (
-                  <select style={styles.input} value={form.id_lote}
-                    onChange={e => setForm({ ...form, id_lote: e.target.value })}>
-                    <option value="">Selecciona un lote...</option>
-                    {lotes.map(l => (
-                      <option key={l.id_lote} value={l.id_lote}>
-                        {l.nombre_lote} — {l.especie} ({l.total_plantas_lote} plantas)
-                      </option>
-                    ))}
-                  </select>
-                )}
+            {lotes.length === 0 ? (
+              <div style={s.sinFincas}>
+                <p style={s.sinFincasTxt}>Esta finca no tiene lotes registrados.</p>
+                <button className="btn" style={s.btnIrFincas}
+                  onClick={() => navigate(`/productor/lotes/${lugarSeleccionado.id_lugar_produccion}`)}>
+                  Crear lotes →
+                </button>
               </div>
-            )}
-
-            {/* PASO 3 */}
-            {lugarSeleccionado && lotes.length > 0 && (
-              <div style={styles.paso}>
-                <div style={styles.pasoHeader}>
-                  <span style={styles.pasoNum}>3</span>
-                  <span style={styles.pasoTitulo}>¿Cuándo quieres la inspección?</span>
-                </div>
-                <form onSubmit={handleSolicitar}>
-                  <div style={styles.campo}>
-                    <label style={styles.label}>Fecha solicitada</label>
-                    <input style={styles.input} type="date"
-                      min={new Date().toISOString().split('T')[0]}
-                      value={form.fecha_solicitada}
-                      onChange={e => setForm({ ...form, fecha_solicitada: e.target.value })} required />
-                  </div>
-                  <div style={styles.campo}>
-                    <label style={styles.label}>¿Por qué necesitas la inspección? (opcional)</label>
-                    <textarea style={{ ...styles.input, height: '80px', resize: 'vertical' }}
-                      placeholder="Ej: Renovación trimestral, presencia de plagas..."
-                      value={form.motivo}
-                      onChange={e => setForm({ ...form, motivo: e.target.value })} />
-                  </div>
-                  <button className="btn" style={{
-                    ...styles.btnSolicitar,
-                    opacity: cargando ? 0.7 : 1,
-                    cursor: cargando ? 'not-allowed' : 'pointer'
-                  }} type="submit" disabled={cargando}>
-                    {cargando ? '⏳ Enviando...' : '✅ Enviar solicitud de inspección'}
-                  </button>
-                </form>
+            ) : (
+              <div style={s.lotesGrid}>
+                {lotes.map(l => {
+                  const sel = form.id_lote === String(l.id_lote)
+                  return (
+                    <div key={l.id_lote} className="fcard"
+                      style={{ ...s.loteCard, background: sel ? '#e8f5e9' : 'white', border: sel ? '3px solid #1a4d2e' : '2px solid #e8efe8' }}
+                      onClick={() => setForm({ ...form, id_lote: String(l.id_lote) })}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <p style={{ ...s.fincaNombre, color: sel ? '#1a4d2e' : '#333' }}>{l.nombre_lote}</p>
+                          <p style={s.fincaDato}>🌱 {l.especie} · {l.total_plantas_lote} plantas · {l.area_ha} ha</p>
+                        </div>
+                        {sel && <span style={s.checkSel}>✓</span>}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
+        )}
 
-          {/* HISTORIAL */}
-          <div>
-            <h2 style={styles.seccionTitulo}>Historial</h2>
-            <p style={styles.seccionSub}>Estado de tus solicitudes e inspecciones</p>
-
-            {/* SOLICITUDES */}
-            {solicitudes.length > 0 && (
-              <>
-                <h3 style={styles.subTitulo}>Solicitudes enviadas</h3>
-                <div style={styles.lista}>
-                  {solicitudes.map((s, i) => {
-                    const est = estadoColorSolicitud(s.estado)
-                    return (
-                      <div key={i} style={styles.card}>
-                        <div style={styles.cardHeader}>
-                          <div>
-                            <h3 style={styles.cardNombre}>{s.nombre_lugar}</h3>
-                            <p style={styles.cardDato}>Lote: {s.nombre_lote} — {s.especie}</p>
-                            <p style={styles.cardDato}>
-                              Fecha solicitada: {new Date(s.fecha_solicitada).toLocaleDateString('es-CO')}
-                            </p>
-                            {s.motivo && <p style={styles.cardDato}>Motivo: {s.motivo}</p>}
-                          </div>
-                          <span style={{ ...styles.badge, background: est.bg, color: est.color }}>
-                            {s.estado}
-                          </span>
-                        </div>
-                        {s.estado === 'Rechazada' && (
-                          <div style={styles.rechazadoBox}>
-                            <p style={styles.rechazadoTexto}>
-                              Solicitud rechazada. Puedes enviar una nueva solicitud.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* VISITAS */}
-            {misVisitas.length > 0 && (
-              <>
-                <h3 style={{ ...styles.subTitulo, marginTop: '24px' }}>Inspecciones programadas</h3>
-                <div style={styles.lista}>
-                  {misVisitas.map((v, i) => {
-                    const est = estadoColorVisita(v.estado || 'Pendiente')
-                    return (
-                      <div key={i} style={styles.card}>
-                        <div style={styles.cardHeader}>
-                          <div>
-                            <h3 style={styles.cardNombre}>{v.nombre_lugar}</h3>
-                            <p style={styles.cardDato}>
-                              Inspector: {v.nombre_inspector || 'Por asignar'}
-                            </p>
-                            <p style={styles.cardDato}>
-                              Fecha: {new Date(v.fecha).toLocaleDateString('es-CO')}
-                            </p>
-                            <p style={styles.cardDato}>Periodo: {v.periodo_reportado}</p>
-                          </div>
-                          <span style={{ ...styles.badge, background: est.bg, color: est.color }}>
-                            {v.estado || 'Pendiente'}
-                          </span>
-                        </div>
-                        {v.observacion_admin && (
-                          <div style={styles.obsAdmin}>
-                            <p style={styles.obsLabel}>Observación ICA:</p>
-                            <p style={styles.obsTexto}>{v.observacion_admin}</p>
-                          </div>
-                        )}
-                        {v.estado === 'Rechazada' && (
-                          <div style={styles.rechazadoBox}>
-                            <p style={styles.rechazadoTexto}>
-                              Inspección rechazada. Puedes solicitar una nueva inspección.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {solicitudes.length === 0 && misVisitas.length === 0 && (
-              <div style={styles.vacio}>
-                <p style={styles.vacioTitulo}>Sin historial aún</p>
-                <p style={styles.vacioSub}>Tus solicitudes e inspecciones aparecerán aquí</p>
+        {/* ── PASO 3 ── */}
+        {lugarSeleccionado && form.id_lote && (
+          <div style={s.paso}>
+            <div style={s.pasoHeader}>
+              <div style={{ ...s.pasoNum, background: form.fecha_solicitada ? '#1a4d2e' : '#f5f7f5', color: form.fecha_solicitada ? 'white' : '#1a4d2e' }}>
+                {form.fecha_solicitada ? '✓' : '3'}
               </div>
-            )}
+              <div>
+                <p style={s.pasoTitulo}>¿Para cuándo la visita?</p>
+                <p style={s.pasoDes}>Pon la fecha en que te queda bien que venga el inspector</p>
+              </div>
+            </div>
+
+            <div style={s.paso3Grid}>
+              <div style={s.campo}>
+                <label style={s.label}>📅 Fecha de la visita</label>
+                <input style={s.input} type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={form.fecha_solicitada}
+                  onChange={e => setForm({ ...form, fecha_solicitada: e.target.value })}
+                />
+              </div>
+              <div style={s.campo}>
+                <label style={s.label}>📝 ¿Por qué necesitas la visita? <span style={{ color: '#aaa', fontWeight: '400' }}>(opcional)</span></label>
+                <textarea style={{ ...s.input, height: '88px', resize: 'vertical' }}
+                  placeholder="Ejemplo: Renovación anual, vi unas plagas nuevas, quiero el certificado..."
+                  value={form.motivo}
+                  onChange={e => setForm({ ...form, motivo: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* BOTÓN ENVIAR */}
+        {lugarSeleccionado && form.id_lote && form.fecha_solicitada && (
+          <button className="btn" style={{
+            ...s.btnEnviar,
+            opacity: cargando ? 0.7 : 1,
+            cursor: cargando ? 'not-allowed' : 'pointer',
+          }} onClick={handleEnviar} disabled={cargando}>
+            {cargando ? '⏳ Enviando...' : '✅ Pedir la visita del ICA'}
+          </button>
+        )}
+
       </div>
+      <Footer />
     </div>
   )
 }
 
-const styles = {
-  page: { minHeight: '100vh', background: '#f5f7f5', fontFamily: "'DM Sans', sans-serif" },
-  navbar: {
-    background: '#1a4d2e', padding: '0 40px', height: '64px',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  },
-  navLogo: { color: 'white', fontSize: '1.4rem', fontFamily: "'DM Serif Display', serif", letterSpacing: '1px' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '12px' },
-  navRol: { color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' },
-  navBtn: {
-    background: 'rgba(255,255,255,0.12)', color: 'white',
-    border: '1px solid rgba(255,255,255,0.2)', padding: '8px 18px',
-    borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif",
-  },
-  navLogout: {
-    background: 'transparent', color: 'rgba(255,255,255,0.6)',
-    border: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem',
-  },
-  contenido: { maxWidth: '1200px', margin: '0 auto', padding: '48px 40px' },
-  header: { marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #dde8dd' },
-  headerSub: { fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#40916c', marginBottom: '8px', fontWeight: '600' },
-  headerTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '2.4rem', color: '#1a4d2e', fontWeight: 'normal' },
-  error: {
-    background: '#fee2e2', color: '#dc2626', padding: '12px 16px',
-    borderRadius: '10px', marginBottom: '20px', fontSize: '0.9rem',
-    display: 'flex', justifyContent: 'space-between',
-  },
-  exito: {
-    background: '#dcfce7', color: '#16a34a', padding: '12px 16px',
-    borderRadius: '10px', marginBottom: '20px', fontSize: '0.9rem',
-    display: 'flex', justifyContent: 'space-between',
-  },
-  layout: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' },
-  seccionTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: '#1a4d2e', marginBottom: '4px', fontWeight: 'normal' },
-  seccionSub: { fontSize: '0.85rem', color: '#888', marginBottom: '20px' },
-  subTitulo: { fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#888', fontWeight: '600', marginBottom: '12px' },
-  paso: {
-    background: 'white', borderRadius: '14px', padding: '20px 24px',
-    marginBottom: '16px', border: '1px solid #e8efe8',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  pasoHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' },
-  pasoNum: {
-    background: '#1a4d2e', color: 'white', width: '28px', height: '28px',
-    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.85rem', fontWeight: '700', flexShrink: 0,
-  },
-  pasoTitulo: { fontSize: '1rem', fontWeight: '600', color: '#333' },
-  vacioPaso: { fontSize: '0.88rem', color: '#aaa', padding: '8px 0' },
-  vacioPasoLink: { color: '#1a4d2e', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' },
-  lugaresList: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  lugarCard: {
-    background: 'white', borderRadius: '10px', padding: '14px 16px',
-    cursor: 'pointer', border: '1px solid #e8efe8', transition: 'all 0.2s',
-  },
-  lugarNombre: { fontFamily: "'DM Serif Display', serif", fontSize: '1rem', color: '#1a4d2e', marginBottom: '4px' },
-  lugarDato: { fontSize: '0.82rem', color: '#888' },
-  campo: { marginBottom: '14px' },
-  label: { display: 'block', marginBottom: '6px', fontSize: '0.88rem', fontWeight: '600', color: '#333' },
-  input: {
-    width: '100%', padding: '11px 14px', border: '2px solid #e5e7eb',
-    borderRadius: '10px', fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif",
-    transition: 'border-color 0.2s', boxSizing: 'border-box',
-  },
-  btnSolicitar: {
-    width: '100%', background: '#1a4d2e', color: 'white', border: 'none',
-    padding: '14px', borderRadius: '10px', fontSize: '1rem',
-    fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginTop: '8px',
-  },
-  lista: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  card: {
-    background: 'white', borderRadius: '12px', padding: '18px 20px',
-    border: '1px solid #e8efe8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardNombre: { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: '#1a4d2e', marginBottom: '6px' },
-  cardDato: { fontSize: '0.82rem', color: '#888', marginTop: '2px' },
-  badge: { padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '12px' },
-  obsAdmin: { marginTop: '12px', background: '#f0f4f0', borderRadius: '8px', padding: '12px' },
-  obsLabel: { fontSize: '0.75rem', textTransform: 'uppercase', color: '#888', fontWeight: '600', marginBottom: '4px' },
-  obsTexto: { fontSize: '0.88rem', color: '#333' },
-  rechazadoBox: { marginTop: '12px', background: '#fff8e1', borderRadius: '8px', padding: '10px 14px' },
-  rechazadoTexto: { fontSize: '0.85rem', color: '#ca8a04' },
-  vacio: {
-    textAlign: 'center', padding: '48px 24px', background: 'white',
-    borderRadius: '16px', border: '1px solid #e8efe8',
-  },
-  vacioTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', color: '#ccc', marginBottom: '8px' },
-  vacioSub: { fontSize: '0.85rem', color: '#ccc' },
+function NavContent({ navigate, usuario }) {
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ color: 'white', fontSize: '1.4rem', fontFamily: "'DM Serif Display', serif", letterSpacing: '1px' }}>UdiFica</span>
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '1.2rem' }}>|</span>
+        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase' }}>Sistema ICA</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>Hola, {usuario.nombre_completo?.split(' ')[0]}</span>
+        <button style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif" }}
+          onClick={() => navigate('/productor/lotes')}>Mis fincas</button>
+        <button style={{ background: 'transparent', color: 'rgba(255,255,255,0.6)', border: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
+          onClick={() => { localStorage.clear(); window.location.href = '/' }}>Salir</button>
+      </div>
+    </>
+  )
+}
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  input:focus, select:focus, textarea:focus { border-color: #1a4d2e !important; outline: none; }
+  .btn:hover { opacity: 0.85; }
+  .fcard { transition: all 0.15s; cursor: pointer; }
+  .fcard:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1) !important; }
+`
+
+const s = {
+  page: { minHeight: '100vh', background: '#f0f4f0', fontFamily: "'DM Sans', sans-serif" },
+  navbar: { background: '#1a4d2e', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  contenido: { maxWidth: '760px', margin: '0 auto', padding: '40px 24px 60px' },
+
+  header: { display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '32px', background: 'white', borderRadius: '18px', padding: '24px', border: '1px solid #e8efe8', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' },
+  headerIcono: { fontSize: '2.5rem', lineHeight: 1, flexShrink: 0 },
+  headerTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '1.8rem', color: '#1a4d2e', fontWeight: 'normal', marginBottom: '6px' },
+  headerDesc: { fontSize: '0.88rem', color: '#666', lineHeight: 1.6 },
+  btnVerHistorial: { background: '#e8f5e9', color: '#1a4d2e', border: '2px solid #c8e6c9', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', flexShrink: 0 },
+
+  msgError: { background: '#fee2e2', color: '#dc2626', padding: '14px 18px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+
+  paso: { background: 'white', borderRadius: '18px', padding: '24px', marginBottom: '16px', border: '1px solid #e8efe8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+  pasoHeader: { display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' },
+  pasoNum: { width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #1a4d2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: '700', flexShrink: 0, transition: 'all 0.2s' },
+  pasoTitulo: { fontSize: '1.05rem', fontWeight: '700', color: '#1a4d2e', marginBottom: '2px' },
+  pasoDes: { fontSize: '0.82rem', color: '#888' },
+
+  sinFincas: { background: '#f8faf8', borderRadius: '12px', padding: '20px', textAlign: 'center' },
+  sinFincasTxt: { fontSize: '0.9rem', color: '#888', marginBottom: '12px' },
+  btnIrFincas: { background: '#1a4d2e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: '600', fontFamily: "'DM Sans', sans-serif" },
+
+  fincasGrid: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  fincaCard: { borderRadius: '14px', padding: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', transition: 'all 0.15s' },
+  fincaCardTop: { display: 'flex', alignItems: 'center', gap: '14px' },
+  fincaNombre: { fontSize: '1rem', fontWeight: '700', marginBottom: '3px' },
+  fincaDato: { fontSize: '0.8rem', color: '#888', marginTop: '1px' },
+  checkSel: { background: '#1a4d2e', color: 'white', borderRadius: '50%', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '700', flexShrink: 0 },
+
+  lotesGrid: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  loteCard: { borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'all 0.15s' },
+
+  paso3Grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+  campo: { marginBottom: '0' },
+  label: { display: 'block', marginBottom: '7px', fontSize: '0.88rem', fontWeight: '600', color: '#444' },
+  input: { width: '100%', padding: '12px 14px', border: '2px solid #e5e7eb', borderRadius: '10px', fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", background: 'white' },
+
+  btnEnviar: { width: '100%', background: '#1a4d2e', color: 'white', border: 'none', padding: '18px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginTop: '8px', boxShadow: '0 4px 16px rgba(26,77,46,0.3)' },
+
+  // Éxito
+  exitoPage: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)', padding: '40px 24px' },
+  exitoCard: { background: 'white', borderRadius: '24px', padding: '48px 40px', textAlign: 'center', maxWidth: '480px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' },
+  exitoIcono: { fontSize: '4rem', marginBottom: '16px' },
+  exitoTitulo: { fontFamily: "'DM Serif Display', serif", fontSize: '2rem', color: '#1a4d2e', marginBottom: '14px' },
+  exitoDesc: { fontSize: '1rem', color: '#666', lineHeight: 1.7, marginBottom: '28px' },
+  btnExito: { display: 'block', width: '100%', background: '#1a4d2e', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontSize: '1rem', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px', cursor: 'pointer' },
+  btnExitoSecundario: { display: 'block', width: '100%', background: 'white', color: '#1a4d2e', border: '2px solid #1a4d2e', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' },
 }

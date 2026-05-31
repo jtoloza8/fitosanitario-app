@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import Footer from '../../components/Footer'
 
 export default function MisLotesDetalle() {
   const navigate = useNavigate()
@@ -173,9 +174,19 @@ export default function MisLotesDetalle() {
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>¿Qué cultivo tiene?</label>
-                  <input style={styles.input} placeholder="Ej: Tomate, Fresa, Mora"
+                  <select style={styles.input}
                     value={form.especie}
-                    onChange={e => setForm({ ...form, especie: e.target.value })} required />
+                    onChange={e => setForm({ ...form, especie: e.target.value })} required>
+                    <option value="">Selecciona el cultivo...</option>
+                    {[
+                      'Aguacate','Arroz','Banano','Brócoli','Cacao','Café',
+                      'Caña de azúcar','Cebolla','Cítricos','Flores','Fresa','Frijol',
+                      'Gulupa','Guayaba','Lechuga','Limón','Maíz','Mandarina',
+                      'Mango','Maracuyá','Mora','Naranja','Palma africana',
+                      'Papa','Pimentón','Piña','Pitahaya','Plátano','Soya',
+                      'Sorgo','Tomate','Uchuva','Vid','Yuca','Zanahoria',
+                    ].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div style={styles.campo}>
                   <label style={styles.label}>Área del lote (hectáreas)</label>
@@ -237,6 +248,7 @@ export default function MisLotesDetalle() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }
